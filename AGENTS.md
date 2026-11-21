@@ -52,7 +52,8 @@ Dentro del plan anterior se puede modificar `apps/api` y `apps/web` (incluido el
 ## 4. Prohibiciones
 
 ### Control de versiones
-- Commit, push, tag y despliegue **solo a petición expresa**. Preservar cambios ajenos; nada de `git reset --hard`, `git clean` ni limpiezas masivas.
+- **Se trabaja directo sobre `main`** (decisión del propietario, 21/11/2026): no se crean ramas por tarea ni pull requests. Cada paso se verifica (pruebas, `phpstan`, `tsc`/`build` y Playwright según lo que cambie), se commitea en `main` y **se hace push a `main` tras verificar**, sin esperar a que se pida. Si la verificación falla, no se hace push.
+- Tag, despliegue y cualquier operación destructiva (`git reset --hard`, `git clean`, `push --force`, borrar ramas remotas, reescribir historia) siguen siendo **solo a petición expresa**. Preservar cambios ajenos y no usar limpiezas masivas.
 
 ### Entorno y datos
 - No imprimir ni subir valores de `.env`, `.env.local` ni credenciales. No versionar `.env*` reales.
