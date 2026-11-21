@@ -12,29 +12,35 @@ const NAVEGACION: ModeloNavegacion = [
     ],
   },
   {
-    id: 'operacion',
-    etiqueta: 'Operación diaria',
-    elementos: [
-      { id: 'matriculas', etiqueta: 'Matrículas', href: '/admin/academico/matriculas', icono: 'registros', permisosRequeridos: ['matriculas.ver'] },
-      { id: 'pagos', etiqueta: 'Pagos', href: '/admin/academico/pagos', icono: 'registros', permisosRequeridos: ['pagos.ver'] },
-    ],
-  },
-  {
-    id: 'gestion',
+    id: 'academico',
     etiqueta: 'Gestión académica',
     elementos: [
+      { id: 'matriculas', etiqueta: 'Matrículas', href: '/admin/academico/matriculas', icono: 'registros', permisosRequeridos: ['matriculas.ver'] },
       { id: 'estudiantes', etiqueta: 'Estudiantes', href: '/admin/academico/estudiantes', icono: 'personas', permisosRequeridos: ['estudiantes.ver'] },
       { id: 'cursos', etiqueta: 'Cursos', href: '/admin/academico/cursos', icono: 'cursos', permisosRequeridos: ['cursos.ver'] },
       { id: 'convocatorias', etiqueta: 'Ediciones', href: '/admin/academico/convocatorias', icono: 'cursos', permisosRequeridos: ['convocatorias.ver'] },
+    ],
+  },
+  {
+    id: 'atencion',
+    etiqueta: 'Atención al cliente',
+    elementos: [
+      { id: 'reclamaciones', etiqueta: 'Reclamaciones', href: '/admin/academico/reclamaciones', icono: 'registros', permisosRequeridos: ['reclamaciones.ver'] },
+    ],
+  },
+  {
+    id: 'finanzas',
+    etiqueta: 'Finanzas',
+    elementos: [
+      { id: 'pagos', etiqueta: 'Pagos', href: '/admin/academico/pagos', icono: 'registros', permisosRequeridos: ['pagos.ver'] },
       { id: 'reportes', etiqueta: 'Reportes', href: '/admin/academico/reportes', icono: 'documentos', permisosRequeridos: ['reportes.ver'] },
     ],
   },
   {
-    id: 'sistema',
-    etiqueta: 'Sistema',
+    id: 'administracion',
+    etiqueta: 'Administración',
     elementos: [
       { id: 'aprobaciones', etiqueta: 'Aprobaciones', href: '/admin/academico/aprobaciones', icono: 'registros', permisosRequeridos: ['aprobaciones.ver'] },
-      { id: 'reclamaciones', etiqueta: 'Reclamaciones', href: '/admin/academico/reclamaciones', icono: 'registros', permisosRequeridos: ['reclamaciones.ver'] },
       { id: 'usuarios', etiqueta: 'Usuarios', href: '/admin/academico/usuarios', icono: 'personas', permisosRequeridos: ['usuarios.ver'] },
       { id: 'roles', etiqueta: 'Roles y permisos', href: '/admin/academico/roles', icono: 'seguridad', permisosRequeridos: ['roles.ver'] },
       { id: 'auditoria', etiqueta: 'Historial de actividad', href: '/admin/academico/auditoria', icono: 'documentos', permisosRequeridos: ['auditoria.ver'] },

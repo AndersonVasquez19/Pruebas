@@ -120,6 +120,41 @@ const RESUMEN = {
   seguimiento: { aprobaciones_pendientes: 2, notificaciones_sin_leer: 3 },
 };
 
+/** Identificador (UUID) de la edición simulada. */
+const EDICION_ID = '11111111-2222-4333-8444-555555555555';
+
+const EDICION = {
+  identificador: EDICION_ID,
+  codigo: 'ED-2026-001',
+  nombre: 'Excel avanzado · Noviembre',
+  nombre_propio: null,
+  curso: { id: 1, codigo: 'CUR-001', nombre: 'Excel avanzado', enlace_grupo_whatsapp: null },
+  modalidad: 'virtual',
+  estado: 'abierta',
+  fecha_inicio: '2026-11-30',
+  fecha_fin: '2026-12-21',
+  cupos: { maximos: 20, disponibles: 18, ocupados: 2 },
+  horarios: [{ dia_semana: 1, hora_inicio: '19:00', hora_fin: '21:00' }],
+  creado_en: '2026-11-01T10:00:00-05:00',
+  revision: 'rev-1',
+  matriculados: [
+    {
+      id: 101,
+      fecha: '2026-11-05',
+      estado: 'pagada',
+      estudiante: { id: 1, dni: '12345678', nombre: 'Luis Torres Díaz', email: 'luis@example.test', telefono: '987654321' },
+      obligacion: null,
+    },
+    {
+      id: 102,
+      fecha: '2026-11-06',
+      estado: 'pendiente',
+      estudiante: { id: 2, dni: '87654321', nombre: 'Ana Quispe Rojas', email: null, telefono: null },
+      obligacion: null,
+    },
+  ],
+};
+
 /** Contador de llegadas por mensaje de prueba; se reinicia con el endpoint de reinicio del mock. */
 const llegadas = new Map();
 
@@ -196,6 +231,10 @@ function manejarPanel(req, res, ruta, consulta, cuerpo) {
   if (ruta === 'academico/consultas/dni' && req.method === 'POST') {
     return enviar(res, 200, { data: { nombres: 'ANA', apellidos: 'QUISPE ROJAS', ya_registrado_como_estudiante: false } });
   }
+
+  // Edición de prueba (ficha 360° con pestañas). Sesiones, asistencia y calificaciones quedan sin simular a propósito: la
+  // página tolera su 404 (sesiones vacías, sin asistencia y aviso de error en las calificaciones).
+  if (ruta === `academico/convocatorias/${EDICION_ID}` && req.method === 'GET') return enviar(res, 200, { data: EDICION });
 
   return enviar(res, 404, { message: `Ruta no simulada: ${req.method} ${ruta}`, code: 'no_encontrado' });
 }

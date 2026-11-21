@@ -9,6 +9,7 @@ import { ResumenAsistenciaEdicion } from '@/components/academico/paneles-asisten
 import { PanelSesionesEdicion } from '@/components/academico/paneles-sesiones';
 import { BotonesContacto, BotonesGrupoWhatsApp } from '@/components/shared/ui/acciones-contacto';
 import { EncabezadoPagina } from '@/components/shared/ui/encabezado-pagina';
+import { PanelPestana, Pestanas, type DefinicionPestana } from '@/components/shared/ui/pestanas';
 import { EstadoError, EstadoProhibido, EstadoSinResultados } from '@/components/shared/ui/estados';
 import { Insignia, colorEstado, type ColorInsignia } from '@/components/shared/ui/insignia';
 import { EsqueletoFicha, ListaDatos, Seccion, Tabla } from '@/components/shared/ui/tabla';
@@ -30,16 +31,22 @@ const ESTADOS_COBRO: Record<EstadoCobro, { texto: string; color: ColorInsignia }
   anulada: { texto: 'Anulada', color: 'rojo' },
 };
 
-export default function ConvocatoriaDetallePage({ params }: { params: Promise<{ id: string }> }) {
+interface PropsFicha {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ pestana?: string }>;
+}
+
+export default function ConvocatoriaDetallePage({ params, searchParams }: PropsFicha) {
   return (
     <Suspense fallback={<EsqueletoFicha etiqueta="Cargando la edición" />}>
-      <Ficha params={params} />
+      <Ficha params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Ficha({ params }: { params: Promise<{ id: string }> }) {
+async function Ficha({ params, searchParams }: PropsFicha) {
   const { id } = await params;
+  const { pestana } = await searchParams;
   const volver = (
     <Link href={LISTADO} className="inline-flex items-center gap-1 text-sm font-semibold text-academico-700 hover:underline">
       <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Volver a ediciones
@@ -55,6 +62,12 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
 
   const c = resultado.datos.data;
   const transiciones = TRANSICIONES_CONVOCATORIA[c.estado];
+  const pestanas: DefinicionPestana[] = [
+    { id: 'resumen', etiqueta: 'Resumen' },
+    ...(c.matriculados !== undefined ? [{ id: 'inscritos', etiqueta: 'Inscritos', contador: c.matriculados.length }] : []),
+    { id: 'sesiones', etiqueta: 'Sesiones y asistencia' },
+    { id: 'evaluaciones', etiqueta: 'Evaluaciones y acta' },
+  ];
 
   return (
     <>
@@ -70,6 +83,8 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
         }
       />
 
+      <Pestanas pestanas={pestanas} inicial={pestana} etiqueta="Secciones de la edición" parametro="pestana">
+      <PanelPestana id="resumen">
       <div className="grid gap-6 xl:grid-cols-3">
         <Seccion id="titulo-datos" titulo="Datos" acciones={<Insignia color={colorEstado(c.estado)}>{etiqueta('estadoConvocatoria', c.estado)}</Insignia>}>
           <ListaDatos
@@ -98,6 +113,12 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
           <Seccion id="titulo-horario" titulo="Horario" descripcion="Los bloques se guardan juntos; dos bloques del mismo día no pueden solaparse.">
             <EditorHorarios convocatoria={c} editable={transiciones.length > 0} />
           </Seccion>
+        </div>
+      </div>
+      </PanelPestana>
+
+      <PanelPestana id="sesiones">
+        <div className="space-y-6">
           <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-panel-border bg-panel-surface" aria-busy="true" aria-label="Cargando sesiones" />}>
             <SesionesDeLaEdicion convocatoria={c} editable={transiciones.length > 0} />
           </Suspense>
@@ -105,10 +126,11 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
             <AsistenciaDeLaEdicion convocatoria={c} />
           </Suspense>
         </div>
-      </div>
+      </PanelPestana>
 
       {c.matriculados !== undefined ? (
-        <div className="mt-6">
+        <PanelPestana id="inscritos">
+        <div>
           <Seccion
             id="titulo-matriculados"
             titulo={`Matriculados (${c.matriculados.length})`}
@@ -181,11 +203,15 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
             )}
           </Seccion>
         </div>
+        </PanelPestana>
       ) : null}
 
-      <Suspense fallback={<div className="mt-6 h-40 animate-pulse rounded-xl border border-panel-border bg-panel-surface" aria-busy="true" aria-label="Cargando calificaciones" />}>
-        <Calificaciones identificador={id} codigo={c.codigo} />
-      </Suspense>
+      <PanelPestana id="evaluaciones">
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-panel-border bg-panel-surface" aria-busy="true" aria-label="Cargando calificaciones" />}>
+          <Calificaciones identificador={id} codigo={c.codigo} />
+        </Suspense>
+      </PanelPestana>
+      </Pestanas>
     </>
   );
 }
@@ -223,14 +249,14 @@ async function AsistenciaDeLaEdicion({ convocatoria: c }: { convocatoria: Convoc
 /** Notas y acta: solo se muestra a quien tiene `calificaciones.ver` (Laravel responde 403 al resto). */
 async function Calificaciones({ identificador, codigo }: { identificador: string; codigo: string }) {
   const resultado = await consultarPanel<{ data: ActaCalificaciones }>(`academico/convocatorias/${identificador}/calificaciones`, `${LISTADO}/${identificador}#calificaciones`);
-  if (resultado.estado === 'prohibido') return null;
+  if (resultado.estado === 'prohibido') {
+    return <p className="text-sm text-panel-muted">Tu cuenta no tiene permiso para ver las calificaciones de esta edición.</p>;
+  }
   if (resultado.estado !== 'ok') return <EstadoError texto="No se pudieron cargar las calificaciones. Inténtalo de nuevo en unos minutos." />;
 
   return (
-    <div className="mt-6">
-      <Seccion id="calificaciones" titulo="Calificaciones" descripcion={`Evaluaciones, notas y acta de ${codigo}. Las notas son datos personales: no se comparten fuera del panel.`}>
-        <PanelCalificaciones acta={resultado.datos.data} />
-      </Seccion>
-    </div>
+    <Seccion id="calificaciones" titulo="Calificaciones" descripcion={`Evaluaciones, notas y acta de ${codigo}. Las notas son datos personales: no se comparten fuera del panel.`}>
+      <PanelCalificaciones acta={resultado.datos.data} />
+    </Seccion>
   );
 }

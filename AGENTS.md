@@ -25,7 +25,7 @@ Plataforma centrada en **Educación y Atención al Cliente**, con un panel admin
 | --- | --- |
 | 0 | Repo y base nuevos; documentos, secretos y usuario administrador. **Ejecutada (21/11/2026)** |
 | 1 | Retiro total del chatbot (`apps/ai` y su capa en Laravel y Next) y de la sección de Tecnología; botón flotante de WhatsApp. **Ejecutada (21/11/2026)**: migraciones `000096` (chatbot) y `000097` (Tecnología) |
-| 2 | Rediseño operativo del panel: menú por flujo, Edición 360°, Expediente 360°, tablero «Hoy»; base de UI con TanStack Query, TanStack Table y Radix UI |
+| 2 | Rediseño operativo del panel: menú por flujo, Edición 360°, Expediente 360°, tablero «Hoy»; base de UI con TanStack Query, TanStack Table y Radix UI. **En curso (21/11/2026):** hechos el menú por flujo y las pestañas de la Edición 360° (Radix UI 1.8.1, componente `components/shared/ui/pestanas.tsx`). TanStack Query y Table **no están instalados todavía a propósito**: se instalan con su primer consumidor real (Query: cola de verificación de pagos o contadores con sondeo; Table: primer `DataTable`; ojo, `@tanstack/react-table` ya va por la v9 y su API cambió respecto a la v8). Pendientes: Expediente 360° del estudiante, tablero «Hoy» |
 | 3 | Pagos asistidos y conciliación con estado de cuenta (reserva de cupo con vencimiento, referencia única, comprobante, antifraude básico, enlaces de cuota) |
 | 4 | Preinscripciones y bandeja de atención unificada |
 | 5 | Certificados verificables con QR |
