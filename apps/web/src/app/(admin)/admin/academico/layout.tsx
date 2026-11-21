@@ -39,7 +39,6 @@ const NAVEGACION: ModeloNavegacion = [
       { id: 'roles', etiqueta: 'Roles y permisos', href: '/admin/academico/roles', icono: 'seguridad', permisosRequeridos: ['roles.ver'] },
       { id: 'auditoria', etiqueta: 'Historial de actividad', href: '/admin/academico/auditoria', icono: 'documentos', permisosRequeridos: ['auditoria.ver'] },
       { id: 'respaldo', etiqueta: 'Exportar datos', href: '/admin/academico/respaldo', icono: 'documentos', permisosRequeridos: ['respaldo.ver'] },
-      { id: 'asistente', etiqueta: 'Asistente virtual', href: '/admin/academico/asistente', icono: 'avisos', permisosRequeridos: ['asistente.ver'] },
     ],
   },
   {

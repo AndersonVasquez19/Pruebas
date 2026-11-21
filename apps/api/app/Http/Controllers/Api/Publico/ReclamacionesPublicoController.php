@@ -11,6 +11,7 @@ use App\Support\AntispamReclamaciones;
 use App\Support\Email;
 use App\Support\Entrada;
 use App\Support\Reclamaciones;
+use App\Support\VisitantePublico;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -93,7 +94,7 @@ final class ReclamacionesPublicoController extends Controller
      */
     private function claves(StoreReclamacionBffRequest $request): array
     {
-        $visitante = ChatPublicoController::visitante($request);
+        $visitante = VisitantePublico::identificar($request);
         $correo = hash('sha256', Email::normalize($request->input('email')));
 
         return [

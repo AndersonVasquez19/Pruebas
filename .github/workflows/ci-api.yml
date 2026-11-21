@@ -1,8 +1,8 @@
 # Integración continua de la API (Laravel 12, en apps/api). Parte de la división por aplicación:
-# ci-api.yml, ci-web.yml (apps/web) y ci-ai.yml (apps/ai). Los tres están SUSPENDIDOS (solo manuales).
+# ci-api.yml y ci-web.yml (apps/web). Ambos están SUSPENDIDOS (solo manuales).
 #
 # Alcance: lo que se puede comprobar sin servicios externos. La suite usa SQLite en memoria (phpunit.xml), así que
-# NO prueba PostgreSQL, concurrencia, correo real ni Horus AI; eso exige los perfiles y autorizaciones que
+# NO prueba PostgreSQL, concurrencia ni correo real; eso exige los perfiles y autorizaciones que
 # describen CLAUDE.md y docs/postgresql-*. No se ejecuta el perfil PostgreSQL aislado. Laravel ya no tiene frontend
 # (Blade y Vite se retiraron): no hay paso de Node en este workflow. El workflow no usa secretos.
 name: CI API
@@ -11,10 +11,10 @@ name: CI API
 # a mano desde la pestaña Actions («Run workflow»). Para reactivarlo, restaura los disparadores, acotados a lo que
 # esta API usa (Laravel vive en apps/api):
 #   pull_request:
-#     paths-ignore: ['apps/web/**', 'apps/ai/**', 'packages/**', 'docs/**']
+#     paths-ignore: ['apps/web/**', 'packages/**', 'docs/**']
 #   push:
 #     branches: [main, anderson]
-#     paths-ignore: ['apps/web/**', 'apps/ai/**', 'packages/**', 'docs/**']
+#     paths-ignore: ['apps/web/**', 'packages/**', 'docs/**']
 on:
   workflow_dispatch:
 

@@ -36,11 +36,11 @@ const nextConfig: NextConfig = {
     },
   },
   /**
-   * Direcciones que antes servía Laravel (Blade) y que siguen guardadas en notificaciones, aprobaciones, correos y en las
-   * respuestas del chat. Son temporales (307): el destino puede cambiar sin que un navegador recuerde el anterior.
+   * Direcciones que antes servía Laravel (Blade) y que siguen guardadas en notificaciones, aprobaciones y correos.
+   * Son temporales (307): el destino puede cambiar sin que un navegador recuerde el anterior.
    */
   async redirects() {
-    const modulosDelPanel = ["matriculas", "estudiantes", "cursos", "reportes", "buscar", "respaldo", "asistente"];
+    const modulosDelPanel = ["matriculas", "estudiantes", "cursos", "reportes", "buscar", "respaldo"];
     return [
       ...modulosDelPanel.map((modulo) => ({
         source: `/admin/${modulo}/:path*`,

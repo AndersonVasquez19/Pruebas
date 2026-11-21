@@ -31,7 +31,6 @@ class IndicesConsultasPanelMigracionTest extends TestCase
             'aprobaciones_internas_aprobador_id_index',
         ],
         'matriculas' => ['matriculas_curso_id_index', 'matriculas_fecha_matricula_index'],
-        'chat_logs' => ['chat_logs_created_at_index', 'chat_logs_intent_created_at_index'],
     ];
 
     protected function setUp(): void
@@ -63,12 +62,7 @@ class IndicesConsultasPanelMigracionTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         DB::table('audit_logs')->insert(['action' => 'previo', 'created_at' => now()]);
-        // Fila sintética de metadatos (sin texto real de conversación).
-        DB::table('chat_logs')->insert([
-            'session_id' => 's1', 'mensaje_usuario' => '', 'respuesta_bot' => '', 'intent_detectado' => 'saludo',
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
-        $antes = [DB::table('audit_logs')->get()->toArray(), DB::table('chat_logs')->get()->toArray()];
+        $antes = [DB::table('audit_logs')->get()->toArray()];
 
         // Base anterior a la migración: sin los índices.
         $migracion = $this->migracion();
@@ -79,7 +73,7 @@ class IndicesConsultasPanelMigracionTest extends TestCase
         $migracion->up(); // idempotente: no falla si ya existen
         $this->assertIndices(true);
 
-        $this->assertEquals($antes, [DB::table('audit_logs')->get()->toArray(), DB::table('chat_logs')->get()->toArray()]);
+        $this->assertEquals($antes, [DB::table('audit_logs')->get()->toArray()]);
 
         // Un índice añadido a mano con el mismo nombre no impide ejecutar la migración.
         $migracion->down();

@@ -1913,34 +1913,6 @@ paths:
         '404': { $ref: '#/components/responses/Error' }
         '422': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/Error' }
-  /compartido/asistente:
-    get:
-      tags: [compartido]
-      summary: "Consulta: asistente"
-      description: "Permiso: `asistente.ver`."
-      responses:
-        '200': { $ref: '#/components/responses/Recurso' }
-        '401': { $ref: '#/components/responses/Error' }
-        '403': { $ref: '#/components/responses/Error' }
-        '429': { $ref: '#/components/responses/Error' }
-  /compartido/asistente/mensaje:
-    post:
-      tags: [compartido]
-      summary: "Ejecuta: asistente › mensaje"
-      description: "Permiso: `asistente.ver`."
-      parameters:
-        - { $ref: '#/components/parameters/Csrf' }
-      requestBody:
-        required: true
-        content:
-          application/json: { schema: { type: object, required: [mensaje], properties: { mensaje: { type: string, maxLength: 2000 }, session_id: { type: string, minLength: 8, maxLength: 64 } } } }
-      responses:
-        '200': { $ref: '#/components/responses/Recurso' }
-        '401': { $ref: '#/components/responses/Error' }
-        '403': { $ref: '#/components/responses/Error' }
-        '404': { $ref: '#/components/responses/Error' }
-        '422': { $ref: '#/components/responses/Error' }
-        '429': { $ref: '#/components/responses/Error' }
   /compartido/auditoria:
     get:
       tags: [compartido]

@@ -30,7 +30,6 @@ abstract class CasoPostgresReversible extends TestCase
         $this->assertIsolatedTestDatabase();
         $this->assertSame('horus_l2_test', DB::connection()->getDatabaseName());
         Http::preventStrayRequests();
-        config(['horus-advisor.enabled' => false, 'horus-catalog.sync_enabled' => false]);
         Event::listen(CommandStarting::class, static function (): never {
             throw new RuntimeException('Esta cápsula no permite comandos Artisan.');
         });
@@ -68,7 +67,6 @@ abstract class CasoPostgresReversible extends TestCase
     {
         if (! $this->ddlAutorizado || ! in_array($nombre, [
             '2026_11_02_000033_add_contenido_to_servicio_publicaciones',
-            '2026_11_03_000034_add_fuente_to_chat_logs',
         ], true)) {
             throw new RuntimeException('Migración fuera de la lista autorizada.');
         }

@@ -1,19 +1,17 @@
 #!/usr/bin/env node
-// Gateway de Horus System: levanta Laravel (API), Next.js (interfaz) y Horus AI (chatbot en Python) con un solo comando y
-// los publica detrás de UN solo origen. Uso:  node ops/gateway/gateway.mjs [opciones]   (o `npm run gateway` desde la raíz)
+// Gateway de Horus System: levanta Laravel (API) y Next.js (interfaz) con un solo comando y los publica detrás de
+// UN solo origen. Uso:  node ops/gateway/gateway.mjs [opciones]   (o `npm run gateway` desde la raíz)
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { crearGateway } from './proxy.mjs';
 import {
-  RAIZ,
   RUNTIME,
   arrancar,
   colaDeLog,
   definirServicios,
   destinoBaseDeDatos,
-  entornoConDefaultsApi,
   matarArbol,
   puertoLibre,
   resolverConfig,
@@ -28,11 +26,9 @@ const AYUDA = `Gateway de Horus System
   --modo=dev|prod     dev (por defecto): next dev. prod: next start (compila antes si falta el build).
   --build             fuerza \`next build\` antes de arrancar (solo con --modo=prod).
   --puerto=N          puerto del gateway (por defecto 8080, o GATEWAY_PORT).
-  --sin-chatbot       no levanta Horus AI; Laravel responde con la contingencia institucional.
-  --semantico         activa el modo híbrido (embeddings) del chatbot; necesita ~3 GB libres.
 
-Variables opcionales: HORUS_LARAVEL_PORT (8000), HORUS_NEXT_PORT (3000), HORUS_AI_PORT (8001), HORUS_WEB_SERVICE_TOKEN y
-HORUS_AI_SERVICE_TOKEN (32 caracteres o más; si faltan se genera uno aleatorio por ejecución).`;
+Variables opcionales: HORUS_LARAVEL_PORT (8000), HORUS_NEXT_PORT (3000) y HORUS_WEB_SERVICE_TOKEN
+(32 caracteres o más; si falta se genera uno aleatorio por ejecución).`;
 
 const log = (texto) => console.log(texto);
 const fallar = (texto) => {
@@ -47,30 +43,27 @@ if (process.argv.includes('--ayuda') || process.argv.includes('-h')) {
 
 let cfg;
 try {
-  cfg = resolverConfig(process.argv.slice(2), entornoConDefaultsApi(process.env));
+  cfg = resolverConfig(process.argv.slice(2), process.env);
 } catch (error) {
   fallar(`${error.message}\n\n${AYUDA}`);
 }
 
-const faltas = verificarRequisitos(cfg);
+const faltas = verificarRequisitos();
 if (faltas.length > 0) fallar(`No se puede arrancar:\n  - ${faltas.join('\n  - ')}`);
 
 const servicios = definirServicios(cfg);
 for (const [nombre, numero] of Object.entries(cfg.puertos)) {
-  if (nombre === 'ai' && !cfg.chatbot) continue;
   if (!(await puertoLibre(numero))) fallar(`El puerto ${numero} (${nombre}) ya está en uso. Cierra lo que lo ocupa o cambia el puerto.`);
 }
 
 const procesos = [];
 let servidor = null;
-let renovacion = null;
 let cerrando = false;
 
 function cerrar(codigo) {
   if (cerrando) return;
   cerrando = true;
   log('\nApagando servicios…');
-  if (renovacion) clearInterval(renovacion);
   servidor?.close();
   for (const p of procesos) matarArbol(p.hijo);
   setTimeout(() => process.exit(codigo), 300);
@@ -88,20 +81,7 @@ if (cfg.modo === 'prod' && (cfg.build || !fs.existsSync(path.join(servicios[1].c
 
 log(`Horus System — gateway en ${cfg.origen}  (modo ${cfg.modo})`);
 log(`  Base de datos de Laravel: ${destinoBaseDeDatos()}  (del entorno o de apps/api/.env; el gateway no la cambia)`);
-log(`  Chatbot: ${cfg.chatbot ? `Horus AI en 127.0.0.1:${cfg.puertos.ai} (${cfg.semantico ? 'híbrido' : 'modo según apps/ai/.env'}; catálogo según .env)` : 'desactivado (--sin-chatbot)'}`);
 log('Iniciando servicios…');
-
-if (cfg.chatbot && cfg.syncCatalogo) {
-  // En Windows `taskkill /F` corta PHP sin liberar el lock de 1 h; se limpia si quedó de una ejecución previa.
-  spawnSync(
-    'php',
-    [
-      '-r',
-      "require 'vendor/autoload.php'; $a = require 'bootstrap/app.php'; $a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); Illuminate\\Support\\Facades\\Cache::lock('horus.ops.worker.lock')->forceRelease();",
-    ],
-    { cwd: path.join(RAIZ, 'apps', 'api'), stdio: 'ignore' },
-  );
-}
 
 for (const servicio of servicios) {
   const { hijo, archivoLog } = arrancar(servicio);
@@ -109,10 +89,6 @@ for (const servicio of servicios) {
   hijo.on('exit', (codigo) => {
     if (cerrando) return;
     const cola = colaDeLog(archivoLog);
-    if (servicio.nombre === 'worker' && cola.includes('worker_already_running')) {
-      log('  ℹ worker ya estaba activo externamente; el gateway continúa');
-      return;
-    }
     console.error(`\n✖ ${servicio.nombre} se detuvo (código ${codigo}). Últimas líneas de ${archivoLog}:\n${cola}`);
     cerrar(1);
   });
@@ -140,31 +116,6 @@ await Promise.all(
   }),
 );
 if (cerrando) await new Promise(() => {});
-
-if (cfg.chatbot && cfg.syncCatalogo) {
-  const worker = servicios.find((s) => s.nombre === 'worker');
-  const sync = spawnSync('php', ['artisan', 'horus:advisor-operacion', 'sync', '--execute'], {
-    cwd: path.join(RAIZ, 'apps', 'api'),
-    env: { ...process.env, ...worker.env },
-    encoding: 'utf8',
-  });
-  if (sync.status === 0) log('  ✔ sincronización inicial de catálogo despachada');
-  else log(`  ⚠ sincronización inicial de catálogo devolvió código ${sync.status ?? 'desconocido'}`);
-
-  // El catálogo firmado caduca a los 5 minutos: sin renovarlo, Horus AI queda «stale» y el chat cae a la contingencia.
-  // Laravel solo despacha el job (un bloqueo de 110 s evita duplicados) y el worker lo procesa; no bloquea el gateway.
-  renovacion = setInterval(() => {
-    const hijo = spawn('php', ['artisan', 'horus:advisor-operacion', 'sync', '--execute'], {
-      cwd: path.join(RAIZ, 'apps', 'api'),
-      env: { ...process.env, ...worker.env },
-      stdio: 'ignore',
-      windowsHide: true,
-    });
-    hijo.on('error', () => {});
-  }, 120_000);
-  renovacion.unref();
-  log('  ✔ renovación del catálogo cada 2 minutos');
-}
 
 fs.mkdirSync(path.join(RUNTIME, 'logs'), { recursive: true });
 const archivoGateway = path.join(RUNTIME, 'logs', 'gateway.log');

@@ -13,14 +13,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
-use Tests\Concerns\ChatPublicoBff;
 use Tests\TestCase;
 
 /** Endurecimiento de autenticación: limitadores separados, anti-enumeración, JWT y cabeceras. */
 class AuthHardeningSprint22Test extends TestCase
 {
     use RefreshDatabase;
-    use ChatPublicoBff;
 
     protected function setUp(): void
     {
@@ -28,18 +26,6 @@ class AuthHardeningSprint22Test extends TestCase
         $this->assertIsolatedTestDatabase();
         Http::preventStrayRequests();
         Notification::fake();
-    }
-
-    public function test_chat_requests_do_not_consume_the_registration_quota(): void
-    {
-        for ($i = 0; $i < 6; $i++) {
-            $this->postChatPublico(['mensaje' => 'hola', 'session_id' => 'sesion-cuota']);
-        }
-
-        $this->postJson(route('api.auth.register'), [
-            'name' => 'Cuenta', 'email' => 'nueva@example.invalid',
-            'password' => 'ClaveSegura123', 'password_confirmation' => 'ClaveSegura123',
-        ])->assertStatus(201);
     }
 
     public function test_credential_timing_check_is_false_without_a_hash_and_true_for_a_match(): void

@@ -5,8 +5,6 @@ declare(strict_types=1);
 use App\Models\AprobacionInterna;
 use App\Models\AuditLog;
 use App\Models\Calificacion;
-use App\Models\ChatIntent;
-use App\Models\ChatLog;
 use App\Models\Convocatoria;
 use App\Models\Curso;
 use App\Models\Estudiante;
@@ -188,22 +186,6 @@ test('aprobaciones filtra alcance para_mi/mias/todas y guarda comentario al apro
     $this->panelComo($admin, 'POST', "compartido/aprobaciones/{$compraAjena->id}/aprobar", [
         'comentario' => 'Aprobado con presupuesto vigente.',
     ])->assertOk()->assertJsonPath('data.comentario', 'Aprobado con presupuesto vigente.');
-});
-
-test('asistente pagina registros con meta y estado de horus_ai', function (): void {
-    $admin = $this->usuarioConRol('admin');
-    ChatIntent::create(['nombre' => 'saludo', 'keywords' => ['hola'], 'respuesta' => 'Hola', 'prioridad' => 10, 'activo' => true]);
-    foreach (range(1, 5) as $i) {
-        ChatLog::create(['session_id' => "s-{$i}", 'mensaje_usuario' => "Msg {$i}", 'respuesta_bot' => "Resp {$i}", 'intent_detectado' => 'saludo', 'fuente' => 'respaldo']);
-    }
-
-    $r = $this->panelComo($admin, 'GET', 'compartido/asistente?per_page=2&page=2')->assertOk();
-    $r->assertJsonCount(2, 'data.registros')
-        ->assertJsonPath('meta.pagina', 2)
-        ->assertJsonPath('meta.por_pagina', 2)
-        ->assertJsonPath('meta.total', 5)
-        ->assertJsonPath('meta.paginas', 3)
-        ->assertJsonPath('data.horus_ai.habilitado', false);
 });
 
 test('calificaciones permite exportar borrador de acta antes del cierre manteniendo 409 en acta oficial', function (): void {

@@ -1,5 +1,5 @@
-# Contexto de construcción de las imágenes de Railway (Laravel se construye desde la raíz del repositorio porque
-# también lee apps/ai/data/knowledge.json). Nada de secretos, dependencias locales, cachés ni registros.
+# Contexto de construcción de las imágenes de Railway (Laravel se construye desde la raíz del repositorio).
+# Nada de secretos, dependencias locales, cachés ni registros.
 
 # Control de versiones y herramientas locales
 .git
@@ -39,12 +39,6 @@ apps/api/database/*.sqlite*
 apps/api/horus.db
 **/*.log
 
-# Horus AI: entorno virtual, modelo (477 MB, no versionado), cachés e informes
-apps/ai/.venv
-apps/ai/models
-apps/ai/reports
-apps/ai/.pytest_cache
-apps/ai/.ruff_cache
 **/__pycache__
 **/*.py[cod]
 

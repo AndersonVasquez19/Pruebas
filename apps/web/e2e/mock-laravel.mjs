@@ -17,7 +17,7 @@ const COOKIE_SESION = process.env.HORUS_SESSION_COOKIE?.trim() || 'laravel-sessi
 const VALOR_SESION = 'sesion-de-prueba';
 
 const PERMISOS = [
-  'aprobaciones.gestionar', 'aprobaciones.ver', 'asistente.ver', 'auditoria.exportar', 'auditoria.ver',
+  'aprobaciones.gestionar', 'aprobaciones.ver', 'auditoria.exportar', 'auditoria.ver',
   'calificaciones.corregir', 'calificaciones.exportar', 'calificaciones.registrar', 'convocatorias.cerrar',
   'convocatorias.crear', 'convocatorias.editar', 'convocatorias.ver', 'cursos.crear', 'cursos.editar', 'cursos.eliminar',
   'cursos.publicar', 'cursos.restaurar', 'cursos.ver', 'estudiantes.crear', 'estudiantes.editar', 'estudiantes.eliminar',
@@ -120,14 +120,7 @@ const RESUMEN = {
   seguimiento: { aprobaciones_pendientes: 2, notificaciones_sin_leer: 3 },
 };
 
-const MENSAJE_LARGO = `Mensaje muy largo del historial. ${'Quisiera saber más detalles sobre el curso, los horarios y las modalidades disponibles. '.repeat(5)}Fin del mensaje largo.`;
-
-const REGISTROS_ASISTENTE = [
-  { id: 1, fecha_local: '20/11/2026 10:15', mensaje: '¿Cuánto cuesta el curso?', respuesta: 'Los precios se informan por asesoría.', intencion: 'precios', fuente: 'advisor' },
-  { id: 2, fecha_local: '20/11/2026 10:20', mensaje: MENSAJE_LARGO, respuesta: 'Respuesta breve.', intencion: null, fuente: 'respaldo' },
-];
-
-/** Cuántas veces ha llegado cada mensaje de prueba: «falla una vez» falla solo la primera. */
+/** Contador de llegadas por mensaje de prueba; se reinicia con el endpoint de reinicio del mock. */
 const llegadas = new Map();
 
 const CURSO_REPORTE = { codigo: 'CUR-001', nombre: 'Curso de prueba 1' };
@@ -185,31 +178,6 @@ function manejarPanel(req, res, ruta, consulta, cuerpo) {
       data: [],
       meta: { pagina: 1, por_pagina: 20, total: 0, paginas: 1, orden: '-fecha', filtros: {}, pendientes: 0, tipos: [] },
     });
-  }
-
-  if (ruta === 'compartido/asistente' && req.method === 'GET') {
-    return enviar(res, 200, {
-      data: {
-        intenciones: [
-          { nombre: 'precios', respuesta: 'Los precios se informan por asesoría.', prioridad: 10, activo: true },
-          { nombre: 'horarios', respuesta: 'Los horarios se confirman con la sede.', prioridad: 20, activo: false },
-        ],
-        registros: REGISTROS_ASISTENTE,
-        horus_ai: { habilitado: true },
-      },
-      meta: { pagina: 1, por_pagina: 50, total: REGISTROS_ASISTENTE.length, paginas: 1, orden: '', filtros: {} },
-    });
-  }
-  if (ruta === 'compartido/asistente/mensaje' && req.method === 'POST') {
-    const mensaje = String(cuerpo?.mensaje ?? '');
-    const veces = (llegadas.get(mensaje) ?? 0) + 1;
-    llegadas.set(mensaje, veces);
-    if (mensaje === 'falla una vez' && veces === 1) {
-      return enviar(res, 503, { message: 'El asistente no está disponible.', code: 'no_disponible' });
-    }
-    const responder = () => enviar(res, 200, { respuesta: `Respuesta de prueba a: ${mensaje}` });
-    // «lento» tarda lo bastante para ver el indicador «escribiendo».
-    return mensaje === 'lento' ? setTimeout(responder, 1200) : responder();
   }
 
   if (ruta === 'academico/reportes' && req.method === 'GET') return enviar(res, 200, reporte(consulta.get('tipo') ?? 'matriculas'));

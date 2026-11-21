@@ -10,6 +10,7 @@ use App\Services\RecepcionCotizacionesPublicas;
 use App\Support\Entrada;
 use App\Support\FormularioCotizacionPublica;
 use App\Support\LimitesEnvioPublico;
+use App\Support\VisitantePublico;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -37,7 +38,7 @@ final class CotizacionesPublicoController extends Controller
     public function store(StoreCotizacionPublicaRequest $request, RecepcionCotizacionesPublicas $recepcion): JsonResponse
     {
         // Límites estrictos tras validar (incremento atómico); por visitante (HMAC del BFF) y por correo (hash).
-        $visitante = ChatPublicoController::visitante($request);
+        $visitante = VisitantePublico::identificar($request);
         $limites = [
             'cotizaciones-bff-v10:'.$visitante => [5, 600],
             'cotizaciones-bff-vdia:'.$visitante => [10, 86400],

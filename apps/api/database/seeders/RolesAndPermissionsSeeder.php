@@ -113,7 +113,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'roles.eliminar',
         'auditoria.ver',
         'auditoria.exportar',
-        'asistente.ver',
         'respaldo.ver',
         'respaldo.exportar',
     ];
@@ -136,7 +135,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'reportes.ver',
         'reportes.exportar.excel',
         'reportes.exportar.pdf',
-        'asistente.ver',
         'respaldo.ver',
         // Pagos (decisión del propietario, 20/11/2026): ver y registrar, igual que secretaría. Así conserva el tope de roles para gestionar
         // sus cuentas. Confirmar, reversar, planificar y exportar siguen solo en admin.

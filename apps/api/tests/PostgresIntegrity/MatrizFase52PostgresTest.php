@@ -378,8 +378,7 @@ class MatrizFase52PostgresTest extends TestCase
             'audit_logs_created_at_index' => 'created_at', 'audit_logs_user_id_index' => 'user_id',
             'notificaciones_internas_destino_index' => 'user_id, audiencia, leida',
             'aprobaciones_internas_estado_index' => 'estado', 'matriculas_curso_id_index' => 'curso_id',
-            'matriculas_fecha_matricula_index' => 'fecha_matricula', 'chat_logs_created_at_index' => 'created_at',
-            'chat_logs_intent_created_at_index' => 'intent_detectado, created_at', 'notificacion_lecturas_unica' => 'notificacion_id, user_id',
+            'matriculas_fecha_matricula_index' => 'fecha_matricula', 'notificacion_lecturas_unica' => 'notificacion_id, user_id',
         ];
         foreach ($indices as $nombre => $columnas) {
             $def = DB::selectOne("SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = ?", [$nombre]);

@@ -57,11 +57,6 @@ Route::middleware(['auth', SesionPanelVigente::class, 'permission:'.implode('|',
         Route::post('respaldo/exportar', [Compartido\RespaldoController::class, 'exportar'])
             ->middleware('throttle:admin-export')->name('respaldo.exportar');
 
-        // Probador y registros del asistente virtual (Horus AI con contingencia institucional).
-        Route::get('asistente', [Compartido\AsistenteController::class, 'index'])->name('asistente.index');
-        Route::post('asistente/mensaje', [Compartido\AsistenteController::class, 'mensaje'])
-            ->middleware('throttle:chat')->name('asistente.mensaje');
-
         // Libro de Reclamaciones: datos personales; el permiso lo declara el controlador y la lógica es la del Blade.
         Route::get('reclamaciones', [Compartido\ReclamacionController::class, 'index'])
             ->middleware('throttle:admin-heavy-read')->name('reclamaciones.index');

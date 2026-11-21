@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\ChatIntent;
 use App\Models\Curso;
 use App\Models\Estudiante;
 use App\Models\Matricula;
 use App\Models\MetodoPago;
 use App\Models\ObligacionPago;
 use App\Models\TransaccionPago;
-use App\Services\AsistenteVirtualService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -30,8 +28,7 @@ class BackendPerformanceTest extends TestCase
         parent::setUp();
         $this->assertIsolatedTestDatabase();
         $this->travelTo(now()->setDate(2026, 10, 28)->startOfDay());
-        config(['matricula-mail.enabled' => false, 'services.openai.api_key' => null,
-            'chatbot.public_catalog_enabled' => false]);
+        config(['matricula-mail.enabled' => false]);
         Http::preventStrayRequests();
     }
 
@@ -102,34 +99,6 @@ class BackendPerformanceTest extends TestCase
         $this->panelMatriculas('GET', '', ['curso_id' => (string) $deleted->id])->assertOk()->assertJsonPath('meta.total', 0);
         $this->panelMatriculas('GET', 'opciones/cursos', ['contexto' => 'filtro', 'q' => 'ELIMINADO'])->assertOk()
             ->assertJsonPath('data.0.eliminado', true);
-        Http::assertNothingSent();
-    }
-
-    public function test_chatbot_does_not_hydrate_unused_inactive_intents_and_refreshes_changes(): void
-    {
-        for ($i = 0; $i < 100; $i++) {
-            ChatIntent::create(['nombre' => 'inactiva_'.$i, 'keywords' => ['beneficio ficticio'],
-                'respuesta' => 'No debe utilizarse.', 'prioridad' => 1, 'activo' => false]);
-        }
-        $builtin = ChatIntent::create(['nombre' => 'consulta_camaras', 'keywords' => ['camaras'],
-            'respuesta' => 'No debe reemplazar el conocimiento local.', 'prioridad' => 1, 'activo' => false]);
-        $custom = ChatIntent::create(['nombre' => 'personalizada', 'keywords' => ['beneficio ficticio'],
-            'respuesta' => 'Respuesta ficticia.', 'prioridad' => 1, 'activo' => true]);
-        $retrieved = [];
-        ChatIntent::retrieved(function (ChatIntent $intent) use (&$retrieved): void {
-            $retrieved[] = $intent->nombre;
-        });
-        $service = app(AsistenteVirtualService::class);
-        $answer = $service->procesarMensaje('beneficio ficticio', 'performance-custom');
-        $this->assertSame(AsistenteVirtualService::RESPUESTA_FALLBACK, $answer['respuesta']);
-        $this->assertSame([], $retrieved);
-        $this->assertNull($service->buscarIntent('camaras'));
-        $builtin->update(['activo' => true]);
-        $this->assertSame('consulta_camaras', $service->buscarIntent('camaras')->nombre);
-        $custom->update(['activo' => false]);
-        $this->assertNull($service->buscarIntent('beneficio ficticio'));
-        $custom->update(['activo' => true, 'respuesta' => 'Actualizada.']);
-        $this->assertSame(AsistenteVirtualService::RESPUESTA_FALLBACK, $service->procesarMensaje('beneficio ficticio', 'performance-custom')['respuesta']);
         Http::assertNothingSent();
     }
 
