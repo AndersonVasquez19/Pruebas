@@ -82,5 +82,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('reclamaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('reclamaciones-bff-formulario:'.VisitantePublico::identificar($request)));
         // «Contáctanos» del BFF: tope amplio por visitante; los estrictos los aplica el controlador tras validar.
         RateLimiter::for('contacto-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 15)->by('contacto-bff-intentos:'.VisitantePublico::identificar($request)));
+        // Página de pago: lectura por enlace secreto; tope por visitante contra ráfagas (adivinar 40 caracteres no es viable).
+        RateLimiter::for('pagos-bff', fn (Request $request) => Limit::perMinute(30)->by('pagos-bff:'.VisitantePublico::identificar($request)));
     }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Publico\AcademicoPublicoController;
 use App\Http\Controllers\Api\Publico\CatalogoPublicoController;
 use App\Http\Controllers\Api\Publico\ContactoPublicoController;
+use App\Http\Controllers\Api\Publico\PagoPublicoController;
 use App\Http\Controllers\Api\Publico\ReclamacionesPublicoController;
 use App\Http\Controllers\Api\Webhooks\ResendWebhookController;
 use App\Http\Middleware\AutenticarServicioWeb;
@@ -33,6 +34,9 @@ Route::prefix('public/v1')->name('api.publico.')->middleware([AutenticarServicio
     // «Contáctanos»: mensaje de contacto del sitio. Sin consulta pública.
     Route::post('/contactos', [ContactoPublicoController::class, 'store'])
         ->middleware('throttle:contacto-bff-intentos')->name('contactos.store');
+    // Página de pago de una reserva de cupo (Fase 3): el enlace secreto de 40 caracteres es el único permiso; cualquier otro valor es 404.
+    Route::get('/pagos/{token}', [PagoPublicoController::class, 'ver'])
+        ->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:pagos-bff')->name('pagos.ver');
 });
 
 // Webhook firmado de Resend (Svix HMAC): actualiza entregas/rebotes sin depender del BFF ni exponer PII.

@@ -716,6 +716,50 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
         '422': { $ref: '#/components/responses/Error' }
+  /academico/matriculas/{matricula}/reserva:
+    get:
+      tags: [academico]
+      summary: "Reserva de cupo de la matrícula: referencia, vencimiento y enlace de pago"
+      description: "Permiso: `matriculas.crear`."
+      x-estado: vigente
+      parameters:
+        - { name: matricula, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { $ref: '#/components/responses/Recurso' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [academico]
+      summary: "Crea la reserva de cupo de una matrícula pendiente o devuelve la que ya tiene (idempotente)"
+      description: "Permiso: `matriculas.crear`."
+      x-estado: vigente
+      parameters:
+        - { name: matricula, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { $ref: '#/components/parameters/Csrf' }
+      responses:
+        '200': { $ref: '#/components/responses/Recurso' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /academico/matriculas/{matricula}/reserva/renovar:
+    post:
+      tags: [academico]
+      summary: "Amplía la reserva con una ventana completa desde ahora (nunca la acorta); reanuda una reserva con pago"
+      description: "Permiso: `matriculas.crear`."
+      x-estado: vigente
+      parameters:
+        - { name: matricula, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { $ref: '#/components/parameters/Csrf' }
+      responses:
+        '200': { $ref: '#/components/responses/Recurso' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
   /academico/matriculas/{matricula}/anular:
     post:
       tags: [academico]

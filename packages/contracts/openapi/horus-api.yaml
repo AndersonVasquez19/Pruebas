@@ -127,6 +127,34 @@ paths:
         "422": {$ref: "#/components/responses/ValidacionLaravel"}
         "429": {description: Límite `publico-web` (300 por minuto).}
         "503": {$ref: "#/components/responses/ErrorBff"}
+  /api/public/v1/pagos/{token}:
+    get:
+      tags: [bff-publico]
+      summary: Página de pago de una reserva de cupo (Fase 3)
+      description: |
+        El enlace secreto de 40 caracteres alfanuméricos es el único permiso: un token mal formado, desconocido o de otra reserva
+        responde siempre el mismo 404. Devuelve la referencia que la persona escribe en el pago, el vencimiento (hora de Lima,
+        ISO 8601), el curso y la edición, los importes de su propia matrícula (`monto` es `null` si todavía no tiene obligación de
+        pago) y los medios de cobro configurados (`metodos.yape` es `null` si no está configurado). Una reserva activa cuyo plazo ya
+        pasó se informa como `vencida` aunque el comando de vencimiento todavía no la haya procesado. Nunca expone datos
+        personales: solo el primer nombre del estudiante.
+      security: [{webServiceToken: []}]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: {type: string, pattern: "^[A-Za-z0-9]{40}$"}
+      responses:
+        "200":
+          description: Datos de la página de pago.
+          headers:
+            Cache-Control: {schema: {type: string, example: "no-store, private"}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PagoReserva"}
+        "401": {description: Token de servicio ausente o incorrecto.}
+        "404": {description: Enlace desconocido o mal formado (o sin `HORUS_WEB_SERVICE_TOKEN` configurado).}
+        "429": {description: Límite `pagos-bff` (30 por minuto y por visitante) o `publico-web`.}
   /api/public/v1/reclamaciones/formulario:
     get:
       tags: [bff-publico]
@@ -286,6 +314,42 @@ components:
           type: array
           maxItems: 50
           items: {$ref: "#/components/schemas/CursoPublico"}
+    PagoReserva:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [estado, vigente, referencia, vence_en, estudiante, curso, edicion, monto, metodos]
+          properties:
+            estado: {type: string, enum: [activa, con_pago, vencida, cerrada]}
+            vigente: {type: boolean, description: "`true` solo si la reserva está activa y su plazo no pasó."}
+            referencia: {type: string, pattern: "^HRS-[A-HJ-NP-Z2-9]{6}$", description: La referencia que se escribe en el pago.}
+            vence_en: {type: string, format: date-time, description: Vencimiento en hora de Lima.}
+            estudiante: {type: string, description: Solo el primer nombre.}
+            curso: {type: [string, "null"]}
+            edicion: {type: [string, "null"]}
+            monto:
+              type: [object, "null"]
+              description: "`null` si la matrícula todavía no tiene obligación de pago."
+              required: [moneda, total, pagado, por_confirmar, saldo]
+              properties:
+                moneda: {type: string, enum: [PEN]}
+                total: {type: string, example: "300.00"}
+                pagado: {type: string, example: "0.00"}
+                por_confirmar: {type: string, example: "0.00"}
+                saldo: {type: string, example: "300.00"}
+            metodos:
+              type: object
+              required: [yape]
+              properties:
+                yape:
+                  type: [object, "null"]
+                  description: "`null` si no está configurado."
+                  required: [numero, titular]
+                  properties:
+                    numero: {type: string}
+                    titular: {type: string}
     FormularioReclamacion:
       type: object
       required: [habilitado, marca, token_envio, correo_activo, plazo_dias_habiles, honeypot]

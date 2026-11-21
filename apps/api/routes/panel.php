@@ -274,7 +274,11 @@ Route::middleware(['auth', SesionPanelVigente::class, 'permission:'.RolesAndPerm
             ->middleware('throttle:admin-export')->name('matriculas.exportar');
         Route::get('matriculas/{matricula}', [Academico\MatriculaController::class, 'show'])->whereNumber('matricula')->name('matriculas.show');
         Route::get('matriculas/{matricula}/constancia', [Academico\MatriculaController::class, 'constancia'])->whereNumber('matricula')->name('matriculas.constancia');
+        // Enlace de pago (Fase 3): reserva de cupo con referencia única y enlace secreto. Todo exige matriculas.crear (el enlace es un secreto).
+        Route::get('matriculas/{matricula}/reserva', [Academico\ReservaMatriculaController::class, 'mostrar'])->whereNumber('matricula')->name('matriculas.reserva.show');
         Route::middleware('throttle:admin-write')->group(function (): void {
+            Route::post('matriculas/{matricula}/reserva', [Academico\ReservaMatriculaController::class, 'crear'])->whereNumber('matricula')->name('matriculas.reserva.store');
+            Route::post('matriculas/{matricula}/reserva/renovar', [Academico\ReservaMatriculaController::class, 'renovar'])->whereNumber('matricula')->name('matriculas.reserva.renovar');
             Route::post('matriculas', [Academico\MatriculaController::class, 'store'])->name('matriculas.store');
             Route::put('matriculas/{matricula}', [Academico\MatriculaController::class, 'update'])->whereNumber('matricula')->name('matriculas.update');
             Route::post('matriculas/{matricula}/etiqueta', [Academico\MatriculaController::class, 'etiqueta'])->whereNumber('matricula')->name('matriculas.etiqueta');
