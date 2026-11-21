@@ -54,7 +54,7 @@ export const metadata: Metadata = {
       'Soluciones tecnológicas, capacitaciones y soporte para hogares, empresas y profesionales en Cajamarca, Perú.',
     images: [
       {
-        url: '/images/index/hero/hero-tecnologia.jpg',
+        url: '/images/index/hero/hero-capacitaciones.jpg',
         width: 1200,
         height: 630,
         alt: 'Horus Group SRL',

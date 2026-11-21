@@ -127,53 +127,6 @@ paths:
         "422": {$ref: "#/components/responses/ValidacionLaravel"}
         "429": {description: Límite `publico-web` (300 por minuto).}
         "503": {$ref: "#/components/responses/ErrorBff"}
-  /api/public/v1/servicios:
-    get:
-      tags: [bff-publico]
-      summary: Fichas de servicios tecnológicos autorizadas (catálogo genérico)
-      description: |
-        Páginas de 12. Excluye los tres servicios que ya tienen página propia (`CABLEADO`, `VIDEOVIGILANCIA`,
-        `SOPORTE`; ver `/api/public/v1/paginas/{pagina}`). Con el catálogo apagado, `habilitado: false`.
-      security: [{webServiceToken: []}]
-      parameters:
-        - name: pagina
-          in: query
-          required: false
-          schema: {type: integer, minimum: 1, maximum: 1000000, default: 1}
-      responses:
-        "200":
-          description: Página del catálogo.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/CatalogoServicios"}
-        "401": {description: Token de servicio ausente o incorrecto.}
-        "404": {description: Sin token de servicio configurado.}
-        "422": {$ref: "#/components/responses/ValidacionLaravel"}
-        "429": {description: Límite `publico-web`.}
-        "503": {$ref: "#/components/responses/ErrorBff"}
-  /api/public/v1/paginas/{pagina}:
-    get:
-      tags: [bff-publico]
-      summary: Contenido editorial autorizado de una página de tecnologías
-      description: |
-        `contenido: null` significa que no hay ficha autorizada (o el catálogo está apagado): la página usa su texto
-        estático. `imagen_url` es una URL absoluta construida con el host de la petición; el consumidor debe
-        conservar solo la ruta (`/assets/...` o `/storage/...`) y anteponer la base pública de Laravel.
-      security: [{webServiceToken: []}]
-      parameters:
-        - name: pagina
-          in: path
-          required: true
-          schema: {type: string, enum: [cableado-estructurado, camaras-seguridad, soporte-mantenimiento]}
-      responses:
-        "200":
-          description: Contenido de la página.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/PaginaServicio"}
-        "401": {description: Token de servicio ausente o incorrecto.}
-        "404": {description: Página desconocida o sin token de servicio configurado.}
-        "429": {description: Límite `publico-web`.}
   /api/public/v1/reclamaciones/formulario:
     get:
       tags: [bff-publico]
@@ -266,90 +219,6 @@ paths:
         "404": {description: Libro apagado o sin token de servicio configurado.}
         "422": {$ref: "#/components/responses/ValidacionLaravel"}
         "429": {description: "Límite de envíos o de intentos (cabecera `Retry-After`); cuerpo `{error: {code: demasiadas_solicitudes}}`."}
-  /api/public/v1/cotizaciones/formulario:
-    get:
-      tags: [bff-publico]
-      summary: Servicios que se pueden solicitar y marca de un solo uso del formulario de cotización
-      description: |
-        La oferta se calcula en el servidor: las tres líneas con página propia (si el servicio está activo) y las fichas
-        publicadas y vigentes del catálogo, con su título público. Recepción apagada
-        (`recepcion-cotizaciones.enabled` distinto de `true`) devuelve `habilitado: false`, sin marca ni servicios.
-        `X-Horus-Visitante` agrupa el límite `cotizaciones-bff-formulario`.
-      security: [{webServiceToken: []}]
-      parameters:
-        - name: X-Horus-Visitante
-          in: header
-          required: false
-          schema: {type: string, pattern: "^[a-f0-9]{64}$"}
-      responses:
-        "200":
-          description: Estado del formulario.
-          headers:
-            Cache-Control: {schema: {type: string, example: "no-store, private"}}
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/FormularioCotizacion"}
-        "401": {description: Token de servicio ausente o incorrecto.}
-        "404": {description: Sin token de servicio configurado.}
-        "429": {description: Límite `cotizaciones-bff-formulario` o `publico-web`.}
-  /api/public/v1/cotizaciones:
-    post:
-      tags: [bff-publico]
-      summary: Registra una solicitud de cotización (la necesidad del cliente; no es una cotización emitida)
-      description: |
-        Entra al módulo comercial existente (`solicitudes_cotizacion`, `origen = publico`, estado inicial `recibida`,
-        sin responsable) y se gestiona en `/admin/cotizaciones`. No lleva precios, no genera documentos ni compromisos
-        económicos. Los servicios se resuelven en el servidor por `identificador_publico` (hasta 5); el primero es el
-        servicio asociado y todos se conservan en el texto de la necesidad. Idempotente por `marca`; el mismo contenido
-        de una solicitud abierta devuelve la existente (200). No existe ruta pública para consultar solicitudes.
-        Límites tras validar: 5 por 10 min y 10 por día por visitante y 5 por día por correo; reintentos y rechazos
-        del servicio devuelven su cupo. Recepción apagada: 503 sin leer el cuerpo.
-      security: [{webServiceToken: []}]
-      parameters:
-        - name: X-Horus-Visitante
-          in: header
-          required: false
-          schema: {type: string, pattern: "^[a-f0-9]{64}$"}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [servicios, nombre, email, ubicacion, necesidad, consentimiento, marca]
-              properties:
-                servicios:
-                  type: array
-                  minItems: 1
-                  maxItems: 5
-                  items: {type: string, format: uuid, description: "`valor` de `/cotizaciones/formulario`."}
-                nombre: {type: string, minLength: 2, maxLength: 120}
-                empresa: {type: string, maxLength: 120}
-                email: {type: string, format: email, maxLength: 254}
-                telefono: {type: string, maxLength: 30}
-                ubicacion: {type: string, minLength: 2, maxLength: 120}
-                necesidad: {type: string, minLength: 10, maxLength: 3000}
-                informacion: {type: string, maxLength: 1000}
-                consentimiento: {type: boolean, description: Debe ser verdadero.}
-                marca: {type: string, description: Marca de `/cotizaciones/formulario` (entre 3 s y 2 h de antigüedad; un solo uso por solicitud).}
-                sitio_web: {type: string, maxLength: 0, description: Señuelo anti-bots; debe ir vacío.}
-      responses:
-        "200":
-          description: Repetición del mismo formulario o solicitud abierta existente con el mismo contenido.
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/ConfirmacionCotizacion"}
-        "201":
-          description: Solicitud registrada.
-          headers:
-            Cache-Control: {schema: {type: string, example: "no-store, private"}}
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/ConfirmacionCotizacion"}
-        "401": {description: Token de servicio ausente o incorrecto.}
-        "422": {$ref: "#/components/responses/ValidacionLaravel"}
-        "429": {description: "Límite de envíos o de intentos (`Retry-After`); cuerpo `{error: {code: demasiadas_solicitudes}}`."}
-        "503": {description: Recepción apagada.}
 components:
   securitySchemes:
     bearerJwt:
@@ -417,58 +286,6 @@ components:
           type: array
           maxItems: 50
           items: {$ref: "#/components/schemas/CursoPublico"}
-    ServicioPublico:
-      type: object
-      required: [titulo, resumen, descripcion]
-      properties:
-        titulo: {type: string, maxLength: 120}
-        resumen: {type: string, maxLength: 500}
-        descripcion: {type: string, maxLength: 5000}
-        categoria: {type: [string, "null"], maxLength: 80}
-    CatalogoServicios:
-      type: object
-      required: [habilitado, total, pagina, por_pagina, servicios]
-      properties:
-        habilitado: {type: boolean}
-        total: {type: integer}
-        pagina: {type: integer}
-        por_pagina: {type: integer, const: 12}
-        servicios:
-          type: array
-          items: {$ref: "#/components/schemas/ServicioPublico"}
-    TarjetaServicio:
-      type: object
-      required: [titulo, descripcion, caracteristicas, icono, variante, imagen_url, imagen_alt]
-      properties:
-        titulo: {type: string}
-        descripcion: {type: string}
-        caracteristicas: {type: array, items: {type: string}}
-        icono: {type: [string, "null"], description: "Clase Font Awesome validada (`fas fa-video`)."}
-        variante: {type: [string, "null"], enum: [producto, escena, null]}
-        imagen_url: {type: [string, "null"], format: uri}
-        imagen_alt: {type: string}
-    ContenidoPagina:
-      type: object
-      required: [titulo, parrafos, imagen_url, imagen_alt, titulo_tarjetas, tarjetas]
-      properties:
-        titulo: {type: string}
-        parrafos: {type: array, items: {type: string}}
-        imagen_url: {type: [string, "null"], format: uri}
-        imagen_alt: {type: string}
-        titulo_tarjetas: {type: [string, "null"]}
-        tarjetas:
-          type: array
-          maxItems: 60
-          items: {$ref: "#/components/schemas/TarjetaServicio"}
-    PaginaServicio:
-      type: object
-      required: [pagina, contenido]
-      properties:
-        pagina: {type: string, enum: [cableado-estructurado, camaras-seguridad, soporte-mantenimiento]}
-        contenido:
-          oneOf:
-            - {$ref: "#/components/schemas/ContenidoPagina"}
-            - {type: "null"}
     FormularioReclamacion:
       type: object
       required: [habilitado, marca, token_envio, correo_activo, plazo_dias_habiles, honeypot]
@@ -516,30 +333,6 @@ components:
         codigo: {type: string, example: SM-1A2B3C4D}
         curso: {type: string}
         modalidad: {type: string}
-        repetida: {type: boolean}
-    FormularioCotizacion:
-      type: object
-      required: [habilitado, marca, servicios, max_servicios]
-      properties:
-        habilitado: {type: boolean}
-        marca: {type: string, nullable: true}
-        max_servicios: {type: integer, example: 5}
-        servicios:
-          type: array
-          items:
-            type: object
-            required: [valor, titulo, resumen]
-            properties:
-              valor: {type: string, format: uuid}
-              titulo: {type: string}
-              resumen: {type: string, nullable: true}
-    ConfirmacionCotizacion:
-      type: object
-      description: Sin datos personales. No es una cotización ni incluye precios.
-      required: [codigo, recibida_at, repetida]
-      properties:
-        codigo: {type: string, example: SOL-0A7631A6-54F5-45F8-8C12-8198BFD15DA1}
-        recibida_at: {type: string, format: date-time}
         repetida: {type: boolean}
     Mensaje:
       type: object

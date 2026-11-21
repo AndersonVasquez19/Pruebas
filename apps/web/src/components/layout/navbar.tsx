@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, PhoneCall } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CONTACT_INFO } from '@/data/contactos';
-import { TECNOLOGIAS_VISIBLES } from '@/lib/funciones';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -138,67 +137,6 @@ export function Navbar() {
               </Link>
             </li>
 
-            {/* Tecnologías Dropdown con Hover Bridge + Click Toggle + Debounce */}
-            {TECNOLOGIAS_VISIBLES && (
-            <li
-              className="relative"
-              onMouseEnter={() => handleMouseEnter('tecnologias')}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button
-                type="button"
-                onClick={() => handleToggle('tecnologias')}
-                aria-expanded={openDropdown === 'tecnologias'}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer',
-                  isActive('/tecnologias') || openDropdown === 'tecnologias'
-                    ? 'text-gold bg-gold/10 font-semibold'
-                    : 'text-stone-200 hover:text-gold hover:bg-white/5'
-                )}
-              >
-                <span>Tecnologías</span>
-                <ChevronDown
-                  className={cn(
-                    'h-3.5 w-3.5 transition-transform duration-200',
-                    openDropdown === 'tecnologias' && 'rotate-180 text-gold'
-                  )}
-                />
-              </button>
-
-              {openDropdown === 'tecnologias' && (
-                <div
-                  className="absolute top-full left-0 pt-2 z-50 w-64"
-                  onMouseEnter={() => handleMouseEnter('tecnologias')}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <div className="rounded-2xl border border-gold/30 bg-[#0A2540] p-2 text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150">
-                    <Link
-                      href="/tecnologias/cableado-estructurado"
-                      onClick={() => setOpenDropdown(null)}
-                      className="block rounded-xl px-3.5 py-2 text-sm text-stone-200 hover:text-gold hover:bg-white/10 transition-colors"
-                    >
-                      Cableado Estructurado
-                    </Link>
-                    <Link
-                      href="/tecnologias/camaras-seguridad"
-                      onClick={() => setOpenDropdown(null)}
-                      className="block rounded-xl px-3.5 py-2 text-sm text-stone-200 hover:text-gold hover:bg-white/10 transition-colors"
-                    >
-                      Cámaras de Seguridad
-                    </Link>
-                    <Link
-                      href="/tecnologias/soporte-mantenimiento"
-                      onClick={() => setOpenDropdown(null)}
-                      className="block rounded-xl px-3.5 py-2 text-sm text-stone-200 hover:text-gold hover:bg-white/10 transition-colors"
-                    >
-                      Soporte y Mantenimiento
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </li>
-            )}
-
             {/* Educación Dropdown con Hover Bridge + Click Toggle + Debounce */}
             <li
               className="relative"
@@ -325,32 +263,6 @@ export function Navbar() {
                   Quiénes Somos
                 </Link>
               </li>
-
-              {TECNOLOGIAS_VISIBLES && (
-              <li className="pt-2 pb-1 border-t border-white/5">
-                <span className="px-4 text-[11px] font-semibold uppercase tracking-wider text-gold">Tecnologías</span>
-                <div className="mt-1 space-y-1 pl-2">
-                  <Link
-                    href="/tecnologias/cableado-estructurado"
-                    className="block rounded-lg px-3 py-1.5 text-xs text-stone-300 hover:text-gold hover:bg-white/5"
-                  >
-                    Cableado Estructurado
-                  </Link>
-                  <Link
-                    href="/tecnologias/camaras-seguridad"
-                    className="block rounded-lg px-3 py-1.5 text-xs text-stone-300 hover:text-gold hover:bg-white/5"
-                  >
-                    Cámaras de Seguridad
-                  </Link>
-                  <Link
-                    href="/tecnologias/soporte-mantenimiento"
-                    className="block rounded-lg px-3 py-1.5 text-xs text-stone-300 hover:text-gold hover:bg-white/5"
-                  >
-                    Soporte y Mantenimiento
-                  </Link>
-                </div>
-              </li>
-              )}
 
               <li className="pt-2 pb-1 border-t border-white/5">
                 <span className="px-4 text-[11px] font-semibold uppercase tracking-wider text-gold">Educación</span>

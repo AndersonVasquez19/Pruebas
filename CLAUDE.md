@@ -2,7 +2,7 @@
 
 Guía técnica para asistentes de código que modifican **esta carpeta**. Define contratos, comandos y criterios de validación. **No amplía la autorización del usuario.**
 
-> **Repositorio nuevo (21/11/2026).** Continuación de Horus System con base `horus_db` propia. **El asistente virtual (Horus AI, `apps/ai`, `chatbot.*`) se retiró el 21/11/2026** y se sustituyó por un botón flotante de WhatsApp; no debe reintroducirse. **Donde este documento mencione servicios tecnológicos, cotizaciones, PostgreSQL S7 o `horus_group`, es histórico** (los servicios tecnológicos se retiran en un paso posterior; ver `AGENTS.md`). Los contratos de autenticación, matrículas, cupos, pagos, reclamaciones y salidas de datos siguen vigentes. Tampoco hay pasarela de pagos: el cobro es manual asistido sobre el libro de pagos.
+> **Repositorio nuevo (21/11/2026).** Continuación de Horus System con base `horus_db` propia. **El asistente virtual (Horus AI, `apps/ai`, `chatbot.*`) se retiró el 21/11/2026** y se sustituyó por un botón flotante de WhatsApp; no debe reintroducirse. **Los servicios tecnológicos y las cotizaciones también se retiraron el 21/11/2026** (migración `000097`; `/tecnologias/*` y `/cotizacion` ya no existen). **Donde este documento mencione PostgreSQL S7 o `horus_group`, es histórico.** Los contratos de autenticación, matrículas, cupos, pagos, reclamaciones y salidas de datos siguen vigentes. Tampoco hay pasarela de pagos: el cobro es manual asistido sobre el libro de pagos.
 
 - El **alcance autorizado** y el plan de fases están en [`AGENTS.md`](AGENTS.md) y tienen prioridad sobre cualquier tarea genérica. Léelo primero. (Las restricciones de «solo backend» y «frontend protegido» del repo original **ya no aplican**.)
 - Antes de comenzar, leer [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) y la documentación específica del módulo; verificar el estado actual del código y Git. El contexto maestro registra también las discrepancias históricas conocidas y no sustituye las restricciones de `AGENTS.md`.
@@ -31,7 +31,7 @@ Sitio público y panel administrativo de Horus Group SRL (Cajamarca): estudiante
 - **Pruebas aisladas PostgreSQL:** `app/Support/Testing/` y `config/pgsql-testing-database.php`. Forman parte del arranque (`bootstrap/app.php`); no las debilites.
 - **Comandos:** `horus:crear-usuario`, `horus:promover-admin`, `horus:matriculas-notificar`.
 - **Datos y vistas:** `database/{migrations,seeders}`; vistas solo para lo que Laravel sigue generando: `resources/views/pdf` (reportes PDF), `resources/views/emails` y `auth/emails` (correos) y `resources/views/errors` (páginas de error, autónomas).
-- **Estáticos:** `public/assets/images/` (versionado; Next sirve imágenes del catálogo desde Laravel) y `/storage` (imágenes de servicios). No hay CSS ni JS: `public/build/` y `public/hot` ya no existen. El sitio `legacy-html-node/` solo existe en el historial de Git.
+- **Estáticos:** `public/assets/images/` (versionado; Next sirve imágenes del catálogo desde Laravel) y `/storage` (imágenes de cursos). No hay CSS ni JS: `public/build/` y `public/hot` ya no existen. El sitio `legacy-html-node/` solo existe en el historial de Git.
 
 Ubica la ruta o pantalla que pide el usuario antes de cambiar archivos.
 

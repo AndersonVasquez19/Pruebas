@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Identificadores numéricos del panel: un valor no numérico responde 404 en lugar de llegar a la
         // consulta (PostgreSQL lo rechaza con SQLSTATE 22P02 y la petición terminaría en 500).
-        foreach (['aprobacion', 'curso', 'estudiante', 'matricula', 'notificacion', 'role', 'servicio', 'user'] as $parametro) {
+        foreach (['aprobacion', 'curso', 'estudiante', 'matricula', 'notificacion', 'role', 'user'] as $parametro) {
             Route::pattern($parametro, '[0-9]+');
         }
 
@@ -80,10 +80,7 @@ class AppServiceProvider extends ServiceProvider
         // después de validar, para que equivocarse al rellenar el formulario no bloquee al consumidor.
         RateLimiter::for('reclamaciones-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 20)->by('reclamaciones-bff-intentos:'.VisitantePublico::identificar($request)));
         RateLimiter::for('reclamaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('reclamaciones-bff-formulario:'.VisitantePublico::identificar($request)));
-        // Fase 2c.3 (BFF): solicitud de cotización. Topes amplios por visitante; los estrictos los aplica el controlador tras validar.
-        RateLimiter::for('cotizaciones-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 20)->by('cotizaciones-bff-intentos:'.VisitantePublico::identificar($request)));
         // «Contáctanos» del BFF: tope amplio por visitante; los estrictos los aplica el controlador tras validar.
         RateLimiter::for('contacto-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 15)->by('contacto-bff-intentos:'.VisitantePublico::identificar($request)));
-        RateLimiter::for('cotizaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('cotizaciones-bff-formulario:'.VisitantePublico::identificar($request)));
     }
 }

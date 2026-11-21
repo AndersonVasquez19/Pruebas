@@ -25,7 +25,7 @@ class ApiPublicaCatalogoTest extends TestCase
         parent::setUp();
         $this->assertIsolatedTestDatabase();
         $this->travelTo(Carbon::parse('2026-10-29 12:00:00', 'America/Lima'));
-        config(['horus-web.service_token' => self::TOKEN, 'catalogo-publico.enabled' => false, 'catalogo-servicios.enabled' => false]);
+        config(['horus-web.service_token' => self::TOKEN, 'catalogo-publico.enabled' => false]);
         Http::preventStrayRequests();
     }
 
@@ -49,8 +49,6 @@ class ApiPublicaCatalogoTest extends TestCase
             $this->getJson('/api/public/v1/cursos', $this->cabecera($token))->assertUnauthorized()
                 ->assertJsonMissing(['cursos'])->assertDontSee(self::TOKEN);
         }
-        $this->getJson('/api/public/v1/servicios')->assertUnauthorized();
-        $this->getJson('/api/public/v1/paginas/camaras-seguridad')->assertUnauthorized();
     }
 
     public function test_solo_get_y_head_y_nunca_se_cachea(): void
@@ -64,10 +62,6 @@ class ApiPublicaCatalogoTest extends TestCase
     {
         $this->getJson('/api/public/v1/cursos', $this->cabecera())->assertOk()
             ->assertExactJson(['habilitado' => false, 'modalidad' => null, 'total' => 0, 'cursos' => []]);
-        $this->getJson('/api/public/v1/servicios', $this->cabecera())->assertOk()
-            ->assertJsonPath('habilitado', false)->assertJsonPath('servicios', []);
-        $this->getJson('/api/public/v1/paginas/cableado-estructurado', $this->cabecera())->assertOk()
-            ->assertExactJson(['pagina' => 'cableado-estructurado', 'contenido' => null]);
     }
 
     public function test_cursos_publicados_solo_exponen_campos_editoriales_y_filtran_por_modalidad(): void
@@ -98,17 +92,18 @@ class ApiPublicaCatalogoTest extends TestCase
             ->assertExactJson(['error' => ['code' => 'catalogo_no_disponible', 'message' => 'El catálogo no está disponible.']]);
     }
 
-    public function test_servicios_valida_la_pagina_y_pagina_desconocida_es_404(): void
+    public function test_las_rutas_retiradas_de_servicios_y_paginas_ya_no_existen(): void
     {
-        $this->getJson('/api/public/v1/servicios?pagina=0', $this->cabecera())->assertStatus(422);
-        $this->getJson('/api/public/v1/servicios?pagina=abc', $this->cabecera())->assertStatus(422);
-        $this->getJson('/api/public/v1/paginas/market', $this->cabecera())->assertNotFound();
+        $this->getJson('/api/public/v1/servicios', $this->cabecera())->assertNotFound();
+        $this->getJson('/api/public/v1/paginas/cableado-estructurado', $this->cabecera())->assertNotFound();
+        $this->getJson('/api/public/v1/cotizaciones/formulario', $this->cabecera())->assertNotFound();
+        $this->postJson('/api/public/v1/cotizaciones', [], $this->cabecera())->assertNotFound();
     }
 
     public function test_el_resto_de_la_api_no_cambia(): void
     {
         $this->getJson('/api/auth/me')->assertUnauthorized();
-        $this->assertCount(11, collect(app('router')->getRoutes()->getRoutes())
+        $this->assertCount(7, collect(app('router')->getRoutes()->getRoutes())
             ->filter(fn ($ruta) => str_starts_with($ruta->uri(), 'api/public/v1')));
     }
 

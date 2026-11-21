@@ -1,5 +1,3 @@
-import { TECNOLOGIAS_VISIBLES } from '@/lib/funciones';
-
 export interface HeroSlide {
   image: string;
   position: string;
@@ -17,19 +15,7 @@ export interface HeroStat {
   label: string;
 }
 
-const TODOS_LOS_SLIDES: (HeroSlide & { tecnologia?: true })[] = [
-  {
-    tecnologia: true,
-    image: '/images/index/hero/hero-tecnologia.jpg',
-    position: 'center 38%',
-    icon: 'Radio',
-    eyebrow: 'Telecomunicaciones y tecnología',
-    title: 'Soluciones tecnológicas',
-    highlight: 'para tu hogar y empresa',
-    text: 'Instalación de cámaras de videovigilancia, cableado estructurado y soporte técnico de equipos informáticos en Cajamarca.',
-    cta: { label: 'Conoce nuestros servicios', url: '/tecnologias/camaras-seguridad' },
-    cta2: { label: 'Contáctanos', url: '/contactos' },
-  },
+export const HERO_SLIDES: HeroSlide[] = [
   {
     image: '/images/index/hero/hero-capacitaciones.jpg',
     position: 'center 68%',
@@ -64,11 +50,6 @@ const TODOS_LOS_SLIDES: (HeroSlide & { tecnologia?: true })[] = [
     cta2: { label: 'Contáctanos', url: '/contactos' },
   },
 ];
-
-/** El slide de tecnología solo se muestra si el área «Tecnologías» está visible (`@/lib/funciones`). */
-export const HERO_SLIDES: HeroSlide[] = TODOS_LOS_SLIDES.filter(
-  (slide) => TECNOLOGIAS_VISIBLES || !slide.tecnologia,
-);
 
 export const HERO_STATS: HeroStat[] = [
   { value: '+400', label: 'Personas capacitadas' },

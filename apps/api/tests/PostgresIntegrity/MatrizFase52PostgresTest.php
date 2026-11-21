@@ -9,7 +9,6 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\PostgresIntegrity\Concerns\RequiresIsolatedPostgres;
 use Tests\TestCase;
@@ -46,65 +45,6 @@ class MatrizFase52PostgresTest extends TestCase
     private function ahora(): string
     {
         return now()->toDateTimeString();
-    }
-
-    /**
-     * @param  array<string, mixed>  $extra
-     * @return array<string, mixed>
-     */
-    private function filaCotizacion(array $extra = []): array
-    {
-        return $extra + [
-            'identificador' => (string) Str::uuid(),
-            'codigo' => 'COT-'.Str::upper(Str::random(10)),
-            'recibida_at' => $this->ahora(),
-            'necesidad_cliente' => 'Necesidad ficticia.',
-            'contacto_nombre' => 'Contacto Ficticio',
-            'contacto_email' => 'contacto@ficticio.test',
-            'estado' => 'recibida',
-            'revision' => 1,
-            'creador_ambito' => 1,
-            'creacion_clave_hash' => hash('sha256', 'clave-'.Str::random(8)),
-            'creacion_huella' => hash('sha256', 'huella'),
-            'origen' => 'administrativo',
-            'created_at' => $this->ahora(),
-            'updated_at' => $this->ahora(),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $extra
-     * @return array<string, mixed>
-     */
-    private function filaHistorial(int $solicitudId, int $revision, array $extra = []): array
-    {
-        return $extra + [
-            'solicitud_id' => $solicitudId,
-            'revision' => $revision,
-            'evento' => 'seguimiento_registrado',
-            'metadatos' => '{}',
-            'actor_ambito' => 1,
-            'clave_hash' => null,
-            'huella' => null,
-            'created_at' => $this->ahora(),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $extra
-     * @return array<string, mixed>
-     */
-    private function filaServicio(array $extra = []): array
-    {
-        return $extra + [
-            'identificador_publico' => (string) Str::uuid(),
-            'codigo' => 'SRV-'.Str::upper(Str::random(8)),
-            'nombre' => 'Servicio ficticio',
-            'estado' => 'inactivo',
-            'revision' => 1,
-            'created_at' => $this->ahora(),
-            'updated_at' => $this->ahora(),
-        ];
     }
 
     private function assertBlocked(callable $escritura): void
@@ -151,71 +91,6 @@ class MatrizFase52PostgresTest extends TestCase
 
     // Cotizaciones: idempotencia e historial ---------------------------------------------------------------------
 
-    public function test_cotizacion_con_la_misma_clave_de_creacion_espera_y_termina_en_23505(): void
-    {
-        $clave = hash('sha256', 'clave-compartida');
-
-        $this->carreraDeUnicidad(function (Connection $c) use ($clave): void {
-            // Mismo (creador_ambito, creacion_clave_hash); código e identificador distintos en cada intento (por defecto).
-            $c->table('solicitudes_cotizacion')->insert($this->filaCotizacion(['creacion_clave_hash' => $clave]));
-        }, 'cotizaciones_creacion_unica');
-
-        $this->assertSame(1, DB::table('solicitudes_cotizacion')->count(), 'Un solo expediente por clave de idempotencia.');
-    }
-
-    public function test_misma_clave_con_otro_ambito_si_se_admite(): void
-    {
-        $clave = hash('sha256', 'clave-compartida');
-        DB::table('solicitudes_cotizacion')->insert($this->filaCotizacion(['creacion_clave_hash' => $clave, 'creador_ambito' => 1]));
-        DB::table('solicitudes_cotizacion')->insert($this->filaCotizacion(['creacion_clave_hash' => $clave, 'creador_ambito' => 2]));
-
-        $this->assertSame(2, DB::table('solicitudes_cotizacion')->count());
-    }
-
-    public function test_seguimiento_con_la_misma_clave_espera_y_termina_en_23505(): void
-    {
-        $id = (int) DB::table('solicitudes_cotizacion')->insertGetId($this->filaCotizacion());
-        $clave = hash('sha256', 'seguimiento-1');
-        $revision = 1;
-
-        $this->carreraDeUnicidad(function (Connection $c) use ($id, $clave, &$revision): void {
-            // Revisión distinta cada vez: solo choca la identidad del seguimiento (solicitud, ámbito, clave).
-            $c->table('cotizacion_historial')->insert($this->filaHistorial($id, ++$revision, ['clave_hash' => $clave]));
-        }, 'cotizacion_seguimiento_unico');
-
-        $this->assertSame(1, DB::table('cotizacion_historial')->where('solicitud_id', $id)->count());
-    }
-
-    public function test_historial_sin_huecos_ni_repetidas_bajo_concurrencia(): void
-    {
-        $id = (int) DB::table('solicitudes_cotizacion')->insertGetId($this->filaCotizacion());
-        DB::table('cotizacion_historial')->insert($this->filaHistorial($id, 1, ['evento' => 'creada']));
-
-        $b = $this->secondSession();
-        $b->beginTransaction();
-        $b->table('cotizacion_historial')->insert($this->filaHistorial($id, 2));
-
-        $this->limitLockWait();
-        $this->assertBlocked(fn () => DB::table('cotizacion_historial')->insert($this->filaHistorial($id, 2)));
-
-        $b->commit();
-
-        $this->assertSqlState(self::UNIQUE_VIOLATION, fn () => DB::table('cotizacion_historial')->insert($this->filaHistorial($id, 2)), 'cotizacion_historial_revision_unica');
-
-        DB::table('cotizacion_historial')->insert($this->filaHistorial($id, 3));
-        $this->assertSame([1, 2, 3], DB::table('cotizacion_historial')->where('solicitud_id', $id)->orderBy('revision')->pluck('revision')->map(fn ($r) => (int) $r)->all());
-    }
-
-    public function test_eventos_sin_clave_no_chocan_entre_si(): void
-    {
-        $id = (int) DB::table('solicitudes_cotizacion')->insertGetId($this->filaCotizacion());
-        foreach ([1, 2, 3] as $revision) {
-            DB::table('cotizacion_historial')->insert($this->filaHistorial($id, $revision, ['clave_hash' => null]));
-        }
-
-        $this->assertSame(3, DB::table('cotizacion_historial')->where('solicitud_id', $id)->count(), 'NULL no participa en cotizacion_seguimiento_unico.');
-    }
-
     // Unicidades bajo concurrencia -------------------------------------------------------------------------------
 
     public function test_dni_de_estudiante_unico_bajo_concurrencia(): void
@@ -242,15 +117,6 @@ class MatrizFase52PostgresTest extends TestCase
         }, 'cursos_codigo_unique');
 
         $this->assertSame(1, DB::table('cursos')->where('codigo', 'PG52-CURSO')->count());
-    }
-
-    public function test_codigo_de_servicio_unico_bajo_concurrencia(): void
-    {
-        $this->carreraDeUnicidad(function (Connection $c): void {
-            $c->table('servicios_tecnologicos')->insert($this->filaServicio(['codigo' => 'PG52-SERVICIO']));
-        }, 'servicios_tecnologicos_codigo_unique');
-
-        $this->assertSame(1, DB::table('servicios_tecnologicos')->where('codigo', 'PG52-SERVICIO')->count());
     }
 
     // Límites numéricos y CHECK ----------------------------------------------------------------------------------
@@ -285,50 +151,7 @@ class MatrizFase52PostgresTest extends TestCase
         }
     }
 
-    public function test_origen_de_cotizaciones_de_la_000029(): void
-    {
-        $sinOrigen = $this->filaCotizacion();
-        unset($sinOrigen['origen']);
-        $id = DB::table('solicitudes_cotizacion')->insertGetId($sinOrigen);
-        $this->assertSame('administrativo', DB::table('solicitudes_cotizacion')->where('id', $id)->value('origen'), 'El valor por defecto es administrativo.');
-
-        DB::table('solicitudes_cotizacion')->insert($this->filaCotizacion(['origen' => 'publico']));
-        $this->assertSame(1, (int) DB::table('solicitudes_cotizacion')->where('origen', 'publico')->count());
-
-        $this->assertSqlState(self::CHECK_VIOLATION, fn () => DB::table('solicitudes_cotizacion')->insert($this->filaCotizacion(['origen' => 'interno'])), 'solicitudes_cotizacion_origen_check');
-
-        $columna = DB::selectOne("SELECT is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'solicitudes_cotizacion' AND column_name = 'origen'");
-        $this->assertNotNull($columna);
-        $this->assertSame('NO', $columna->is_nullable);
-        $this->assertStringContainsString('administrativo', (string) $columna->column_default);
-        $this->assertSame(1, (int) DB::table('migrations')->where('migration', '2026_10_29_000029_add_origen_to_solicitudes_cotizacion')->count());
-    }
-
     // Referencias --------------------------------------------------------------------------------------------------
-
-    public function test_restrict_y_set_null_en_servicios_y_cotizaciones(): void
-    {
-        $servicioId = (int) DB::table('servicios_tecnologicos')->insertGetId($this->filaServicio());
-        $uuid = (string) DB::table('servicios_tecnologicos')->where('id', $servicioId)->value('identificador_publico');
-        $usuario = User::factory()->create();
-        $solicitudId = (int) DB::table('solicitudes_cotizacion')->insertGetId($this->filaCotizacion([
-            'servicio_id' => $servicioId, 'servicio_uuid' => $uuid, 'servicio_nombre_historico' => 'Servicio ficticio',
-            'creado_por' => $usuario->id, 'responsable_id' => $usuario->id,
-        ]));
-        DB::table('cotizacion_historial')->insert($this->filaHistorial($solicitudId, 1, ['actor_id' => $usuario->id]));
-
-        // RESTRICT: ni el servicio ni la solicitud con historial pueden borrarse.
-        $this->assertSqlState(self::RESTRICT_VIOLATION, fn () => DB::table('servicios_tecnologicos')->where('id', $servicioId)->delete());
-        $this->assertSqlState(self::RESTRICT_VIOLATION, fn () => DB::table('solicitudes_cotizacion')->where('id', $solicitudId)->delete());
-
-        // SET NULL: borrar la cuenta conserva el expediente y su historial.
-        DB::table('users')->where('id', $usuario->id)->delete();
-        $solicitud = DB::table('solicitudes_cotizacion')->where('id', $solicitudId)->first();
-        $this->assertNull($solicitud->creado_por);
-        $this->assertNull($solicitud->responsable_id);
-        $this->assertNull(DB::table('cotizacion_historial')->where('solicitud_id', $solicitudId)->value('actor_id'));
-        $this->assertSame(1, DB::table('servicios_tecnologicos')->where('id', $servicioId)->count());
-    }
 
     public function test_referencia_inexistente_es_foreign_key_violation(): void
     {

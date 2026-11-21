@@ -23,8 +23,8 @@ Plataforma centrada en **Educación y Atención al Cliente**, con un panel admin
 
 | Fase | Contenido |
 | --- | --- |
-| 0 | Repo y base nuevos; documentos, secretos y usuario administrador |
-| 1 | Retiro total del chatbot (`apps/ai` y su capa en Laravel y Next) y de la sección de Tecnología; botón flotante de WhatsApp |
+| 0 | Repo y base nuevos; documentos, secretos y usuario administrador. **Ejecutada (21/11/2026)** |
+| 1 | Retiro total del chatbot (`apps/ai` y su capa en Laravel y Next) y de la sección de Tecnología; botón flotante de WhatsApp. **Ejecutada (21/11/2026)**: migraciones `000096` (chatbot) y `000097` (Tecnología) |
 | 2 | Rediseño operativo del panel: menú por flujo, Edición 360°, Expediente 360°, tablero «Hoy»; base de UI con TanStack Query, TanStack Table y Radix UI |
 | 3 | Pagos asistidos y conciliación con estado de cuenta (reserva de cupo con vencimiento, referencia única, comprobante, antifraude básico, enlaces de cuota) |
 | 4 | Preinscripciones y bandeja de atención unificada |
@@ -67,7 +67,7 @@ Dentro del plan anterior se puede modificar `apps/api` y `apps/web` (incluido el
 
 - **Antes:** `git status --short`, rama actual, y localizar el contrato en rutas, controlador, request, servicio/modelo y prueba.
 - **Durante:** cambios focalizados, nombres de dominio en español, permisos nuevos como constante en `RolesAndPermissionsSeeder` **y** migración. Para fallos reproducibles, prueba de regresión. No debilitar controles para que una prueba pase.
-- **Retiros (Fase 1):** eliminar por capas (rutas → controladores → servicios → modelos/migraciones → config → tests → docs), ejecutando la suite al cerrar cada capa. Como el esquema es nuevo, se retiran también las migraciones y permisos propios del chatbot y de Tecnología.
+- **Retiros (Fase 1):** eliminar por capas (rutas → controladores → servicios → modelos/migraciones → config → tests → docs), ejecutando la suite al cerrar cada capa. Las migraciones históricas se **conservan** (otras migraciones dependen de esas tablas y una instalación nueva debe seguir siendo reproducible); una migración nueva elimina tablas y permisos, se detiene si hay datos, y los `down()` antiguos que tocan esas tablas deben tolerar su ausencia, porque `DatabaseMigrations` hace `migrate:rollback` completo.
 - **Al cerrar:** validación de `CLAUDE.md` §7, `git diff --check` y revisión de `git status`. Informar qué cambió, rutas, comprobaciones con su resultado, límites y pendientes.
 
 ## 6. Pruebas

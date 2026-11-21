@@ -16,13 +16,6 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class RolesAndPermissionsSeeder extends Seeder
 {
-    /**
-     * Ya no hay panel de servicios tecnológicos. `servicios.publicar` se conserva como marca editorial del catálogo público: solo
-     * las fichas autorizadas por quien la tiene aparecen en /tecnologias/* y en Horus AI. No se asigna desde Roles y permisos (se
-     * oculta) y solo la tiene admin. @var list<string>
-     */
-    public const SERVICIOS_PERMISSIONS = ['servicios.publicar'];
-
     /** Académico, Ola 3: convocatorias y horarios. Admin y coordinador todos; secretaria solo `ver`. @var list<string> */
     public const CONVOCATORIAS_PERMISSIONS = ['convocatorias.ver', 'convocatorias.crear', 'convocatorias.editar', 'convocatorias.cerrar'];
 
@@ -72,7 +65,6 @@ class RolesAndPermissionsSeeder extends Seeder
     /** @var list<string> */
     public const PERMISSIONS = [
         ...self::PANEL_PERMISSIONS,
-        ...self::SERVICIOS_PERMISSIONS,
         ...self::CONVOCATORIAS_PERMISSIONS,
         ...self::CALIFICACIONES_PERMISSIONS,
         ...self::SESIONES_PERMISSIONS,
