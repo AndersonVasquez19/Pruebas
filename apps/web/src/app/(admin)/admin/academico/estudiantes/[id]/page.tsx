@@ -8,11 +8,13 @@ import { BotonesContacto, BotonesGrupoWhatsApp } from '@/components/shared/ui/ac
 import { EncabezadoPagina } from '@/components/shared/ui/encabezado-pagina';
 import { EstadoError, EstadoProhibido, EstadoSinResultados } from '@/components/shared/ui/estados';
 import { Insignia, colorEstado } from '@/components/shared/ui/insignia';
+import { PanelPestana, Pestanas, type DefinicionPestana } from '@/components/shared/ui/pestanas';
 import { EsqueletoFicha, ListaDatos, Seccion, Tabla } from '@/components/shared/ui/tabla';
-import type { EstudianteDetalle } from '@/features/academico/tipos';
+import { ESTADOS_COBRO, sumarSoles } from '@/features/academico/cobro';
+import type { EstudianteDetalle, ObligacionResumen } from '@/features/academico/tipos';
 import { consultarPanel } from '@/lib/panel/api-servidor';
 import { mensajeEstudiante } from '@/lib/panel/contacto';
-import { etiqueta, fecha } from '@/lib/panel/formato';
+import { etiqueta, fecha, moneda } from '@/lib/panel/formato';
 
 export const metadata = { title: 'Ficha del estudiante · Gestión académica' };
 
@@ -21,16 +23,22 @@ export const instant = false;
 
 const LISTADO = '/admin/academico/estudiantes';
 
-export default function EstudianteDetallePage({ params }: { params: Promise<{ id: string }> }) {
+interface PropsFicha {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ pestana?: string }>;
+}
+
+export default function EstudianteDetallePage({ params, searchParams }: PropsFicha) {
   return (
     <Suspense fallback={<EsqueletoFicha etiqueta="Cargando el estudiante" />}>
-      <Ficha params={params} />
+      <Ficha params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Ficha({ params }: { params: Promise<{ id: string }> }) {
+async function Ficha({ params, searchParams }: PropsFicha) {
   const { id } = await params;
+  const { pestana } = await searchParams;
   const volver = (
     <Link href={LISTADO} className="inline-flex items-center gap-1 text-sm font-semibold text-academico-700 hover:underline">
       <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Volver a estudiantes
@@ -46,6 +54,11 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
 
   const estudiante = resultado.datos.data;
   const nombre = `${estudiante.nombres} ${estudiante.apellidos}`;
+  const pestanas: DefinicionPestana[] = [
+    { id: 'resumen', etiqueta: 'Resumen' },
+    ...(estudiante.matriculas ? [{ id: 'matriculas', etiqueta: 'Matrículas', contador: estudiante.matriculas.length }] : []),
+    { id: 'cuenta', etiqueta: 'Cuenta corriente' },
+  ];
 
   return (
     <>
@@ -64,6 +77,8 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
         <Alerta tipo="aviso" className="mb-6">Este estudiante está desactivado: no aparece en los listados ni puede matricularse.</Alerta>
       ) : null}
 
+      <Pestanas pestanas={pestanas} inicial={pestana} etiqueta="Secciones de la ficha del estudiante" parametro="pestana">
+      <PanelPestana id="resumen">
       <div className="grid gap-6 xl:grid-cols-3">
         <Seccion
           id="titulo-datos"
@@ -96,12 +111,18 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </Seccion>
 
+        <Seccion id="titulo-historial" titulo="Historial" descripcion="Operaciones registradas en la auditoría." className="xl:col-span-2">
+          <HistorialAcademico entidad="estudiante" eventos={estudiante.historial} />
+        </Seccion>
+      </div>
+      </PanelPestana>
+
         {estudiante.matriculas ? (
+          <PanelPestana id="matriculas">
           <Seccion
             id="titulo-matriculas"
             titulo="Matrículas"
             descripcion="Historial de matrículas del estudiante, incluidas las anuladas."
-            className="xl:col-span-2"
             sinRelleno
             acciones={
               !estudiante.eliminado && estudiante.estado === 'activo' ? (
@@ -141,12 +162,86 @@ async function Ficha({ params }: { params: Promise<{ id: string }> }) {
 </Tabla>
             )}
           </Seccion>
+          </PanelPestana>
         ) : null}
 
-        <Seccion id="titulo-historial" titulo="Historial" descripcion="Operaciones registradas en la auditoría." className="xl:col-span-3">
-          <HistorialAcademico entidad="estudiante" eventos={estudiante.historial} />
-        </Seccion>
-      </div>
+      <PanelPestana id="cuenta">
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-panel-border bg-panel-surface" aria-busy="true" aria-label="Cargando la cuenta corriente" />}>
+          <CuentaCorriente estudianteId={estudiante.id} dni={estudiante.dni} nombre={nombre} />
+        </Suspense>
+      </PanelPestana>
+      </Pestanas>
     </>
+  );
+}
+
+/**
+ * Cuenta corriente: las obligaciones de pago de las matrículas del estudiante, con lo pagado y lo que falta. Solo con
+ * `pagos.ver` (Laravel responde 403 al resto). La API filtra por texto (DNI, nombre o código de edición), así que el
+ * resultado se vuelve a filtrar por el identificador del estudiante: nunca se muestran obligaciones de otra persona.
+ */
+async function CuentaCorriente({ estudianteId, dni, nombre }: { estudianteId: number; dni: string; nombre: string }) {
+  const resultado = await consultarPanel<{ data: ObligacionResumen[] }>(
+    `academico/pagos/obligaciones?busqueda=${encodeURIComponent(dni)}&per_page=50`,
+    `${LISTADO}/${estudianteId}?pestana=cuenta`,
+  );
+  if (resultado.estado === 'prohibido') {
+    return <p className="text-sm text-panel-muted">Tu cuenta no tiene permiso para ver los pagos de este estudiante.</p>;
+  }
+  if (resultado.estado !== 'ok') return <EstadoError texto="No se pudo cargar la cuenta corriente. Inténtalo de nuevo en unos minutos." />;
+
+  const obligaciones = resultado.datos.data.filter((o) => o.estudiante.id === estudianteId);
+  const vigentes = obligaciones.filter((o) => o.estado !== 'anulada');
+  const adeudado = sumarSoles(vigentes.map((o) => o.saldo));
+
+  return (
+    <Seccion
+      id="titulo-cuenta"
+      titulo="Cuenta corriente"
+      descripcion="Lo pagado y lo que falta por cada matrícula (soles). Las obligaciones anuladas no suman."
+      sinRelleno
+      acciones={
+        vigentes.length > 0 ? (
+          <span className="text-sm text-panel-muted">
+            Saldo pendiente: <strong className={Number.parseFloat(adeudado) > 0 ? 'text-estado-error' : 'text-panel-text'}>{moneda(adeudado)}</strong>
+          </span>
+        ) : null
+      }
+    >
+      {obligaciones.length === 0 ? (
+        <p className="px-5 py-12 text-center text-sm text-panel-muted">Este estudiante todavía no tiene obligaciones de pago.</p>
+      ) : (
+        <Tabla
+          plana
+          titulo={`Cuenta corriente de ${nombre}`}
+          columnas={['Concepto', 'Estado', { texto: 'Total', derecha: true }, { texto: 'Pagado', derecha: true }, { texto: 'Saldo', derecha: true }]}
+        >
+          {obligaciones.map((o) => {
+            const estado = ESTADOS_COBRO[o.estado];
+            return (
+              <tr key={o.identificador}>
+                <td className="px-4 py-3">
+                  <Link href={`/admin/academico/pagos/${o.identificador}`} className="font-medium text-panel-text hover:text-academico-800 hover:underline">
+                    {o.concepto}
+                  </Link>
+                  {o.edicion ? <p className="text-xs text-panel-muted">Edición {o.edicion}</p> : null}
+                  {o.proxima_cuota ? (
+                    <p className={`text-xs ${o.proxima_cuota.vencida ? 'font-semibold text-estado-error' : 'text-panel-muted'}`}>
+                      {o.proxima_cuota.vencida ? 'Cuota vencida' : 'Próxima cuota'} {fecha(o.proxima_cuota.vence)} · {moneda(o.proxima_cuota.saldo)}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-4 py-3">
+                  <Insignia color={estado.color}>{estado.texto}</Insignia>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{moneda(o.monto_total)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{moneda(o.pagado)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums">{moneda(o.saldo)}</td>
+              </tr>
+            );
+          })}
+        </Tabla>
+      )}
+    </Seccion>
   );
 }

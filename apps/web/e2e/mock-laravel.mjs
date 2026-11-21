@@ -236,6 +236,67 @@ function manejarPanel(req, res, ruta, consulta, cuerpo) {
   // página tolera su 404 (sesiones vacías, sin asistencia y aviso de error en las calificaciones).
   if (ruta === `academico/convocatorias/${EDICION_ID}` && req.method === 'GET') return enviar(res, 200, { data: EDICION });
 
+  // Expediente del estudiante 1. Su matrícula y sus obligaciones alimentan las pestañas «Matrículas» y «Cuenta corriente».
+  if (ruta === 'academico/estudiantes/1' && req.method === 'GET') {
+    return enviar(res, 200, {
+      data: {
+        ...ESTUDIANTES[0],
+        fecha_nacimiento: '1995-03-10',
+        direccion: 'Jr. Lima 123',
+        actualizado_en: AHORA,
+        historial: [],
+        matriculas: [{ id: 101, curso: { id: 1, codigo: 'CUR-001', nombre: 'Excel avanzado', enlace_grupo_whatsapp: null }, estado: 'pagada', fecha: '2026-11-05' }],
+      },
+    });
+  }
+  // La búsqueda de Laravel es por texto (DNI, nombre o código de edición): el mock devuelve SIEMPRE también la obligación de otra
+  // persona para comprobar que la página filtra por el identificador del estudiante y nunca muestra la ajena.
+  if (ruta === 'academico/pagos/obligaciones' && req.method === 'GET') {
+    const base = { matricula_id: 101, moneda: 'PEN', plan: 'fraccionado', pendiente_confirmar: '0.00' };
+    const est = (id, dni, nombre) => ({ id, dni, nombre, telefono: null, email: null });
+    return enviar(res, 200, {
+      data: [
+        {
+          ...base,
+          identificador: 'obl-propia-1',
+          estudiante: est(1, ESTUDIANTES[0].dni, 'Estudiante Uno'),
+          edicion: 'ED-2026-001',
+          concepto: 'Excel avanzado',
+          estado: 'parcial',
+          monto_total: '300.00',
+          pagado: '100.00',
+          saldo: '200.00',
+          proxima_cuota: { numero: 2, vence: '2026-11-01', saldo: '100.00', vencida: true },
+        },
+        {
+          ...base,
+          identificador: 'obl-propia-2',
+          estudiante: est(1, ESTUDIANTES[0].dni, 'Estudiante Uno'),
+          edicion: null,
+          concepto: 'Taller anulado',
+          estado: 'anulada',
+          monto_total: '50.00',
+          pagado: '0.00',
+          saldo: '50.00',
+          proxima_cuota: null,
+        },
+        {
+          ...base,
+          identificador: 'obl-ajena',
+          estudiante: est(2, ESTUDIANTES[1].dni, 'Otra Persona'),
+          edicion: null,
+          concepto: 'Curso ajeno',
+          estado: 'pendiente',
+          monto_total: '999.00',
+          pagado: '0.00',
+          saldo: '999.00',
+          proxima_cuota: null,
+        },
+      ],
+      meta: { pagina: 1, por_pagina: 50, total: 3, paginas: 1, orden: '', filtros: {} },
+    });
+  }
+
   return enviar(res, 404, { message: `Ruta no simulada: ${req.method} ${ruta}`, code: 'no_encontrado' });
 }
 

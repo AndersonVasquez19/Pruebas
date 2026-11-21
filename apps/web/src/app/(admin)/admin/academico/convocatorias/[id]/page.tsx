@@ -11,9 +11,10 @@ import { BotonesContacto, BotonesGrupoWhatsApp } from '@/components/shared/ui/ac
 import { EncabezadoPagina } from '@/components/shared/ui/encabezado-pagina';
 import { PanelPestana, Pestanas, type DefinicionPestana } from '@/components/shared/ui/pestanas';
 import { EstadoError, EstadoProhibido, EstadoSinResultados } from '@/components/shared/ui/estados';
-import { Insignia, colorEstado, type ColorInsignia } from '@/components/shared/ui/insignia';
+import { Insignia, colorEstado } from '@/components/shared/ui/insignia';
 import { EsqueletoFicha, ListaDatos, Seccion, Tabla } from '@/components/shared/ui/tabla';
-import { TRANSICIONES_CONVOCATORIA, type ActaCalificaciones, type ConvocatoriaDetalle, type EstadoCobro, type ResumenAsistenciaFila, type SesionClase } from '@/features/academico/tipos';
+import { ESTADOS_COBRO } from '@/features/academico/cobro';
+import { TRANSICIONES_CONVOCATORIA, type ActaCalificaciones, type ConvocatoriaDetalle, type ResumenAsistenciaFila, type SesionClase } from '@/features/academico/tipos';
 import { consultarPanel } from '@/lib/panel/api-servidor';
 import { mensajeBienvenida } from '@/lib/panel/contacto';
 import { etiqueta, fecha, moneda } from '@/lib/panel/formato';
@@ -24,12 +25,6 @@ export const metadata = { title: 'Edición · Gestión académica' };
 export const instant = false;
 
 const LISTADO = '/admin/academico/convocatorias';
-const ESTADOS_COBRO: Record<EstadoCobro, { texto: string; color: ColorInsignia }> = {
-  pendiente: { texto: 'Pendiente', color: 'ambar' },
-  parcial: { texto: 'Parcial', color: 'azul' },
-  pagada: { texto: 'Pagada', color: 'verde' },
-  anulada: { texto: 'Anulada', color: 'rojo' },
-};
 
 interface PropsFicha {
   params: Promise<{ id: string }>;
