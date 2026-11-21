@@ -3,7 +3,7 @@ import { Poppins, Montserrat, Bricolage_Grotesque, Figtree } from 'next/font/goo
 import './globals.css';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
-import { ChatWidget } from '@/components/chat/chat-widget';
+import { WhatsAppFloatingWidget } from '@/components/shared/whatsapp-floating-widget';
 
 const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700'],
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
       'Soluciones tecnológicas, capacitaciones y soporte para hogares, empresas y profesionales en Cajamarca, Perú.',
     images: [
       {
-        url: '/images/index/hero/hero-tecnologia.jpg',
+        url: '/images/index/hero/hero-capacitaciones.jpg',
         width: 1200,
         height: 630,
         alt: 'Horus Group SRL',
@@ -86,7 +86,7 @@ export default function RootLayout({
         <main className="flex-1">{children}</main>
         <div data-chrome-publico className="contents">
           <Footer />
-          <ChatWidget />
+          <WhatsAppFloatingWidget />
         </div>
       </body>
     </html>

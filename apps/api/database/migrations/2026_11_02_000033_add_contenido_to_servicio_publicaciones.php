@@ -57,6 +57,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('servicio_publicacion_elementos');
+
+        // La migración 000097 elimina `servicio_publicaciones` al retirar Tecnología: un rollback completo pasa por aquí con la
+        // tabla ya ausente y no debe fallar.
+        if (! Schema::hasTable('servicio_publicaciones')) {
+            return;
+        }
+
         Schema::table('servicio_publicaciones', function (Blueprint $table): void {
             $table->dropColumn(['titulo_tarjetas', 'imagen_principal_ruta', 'imagen_principal_alt']);
         });

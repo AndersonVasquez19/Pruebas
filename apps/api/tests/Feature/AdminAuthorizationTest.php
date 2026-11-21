@@ -195,13 +195,6 @@ class AdminAuthorizationTest extends TestCase
         $this->assertDatabaseMissing('system_settings', ['key' => 'moneda', 'value' => 'X']);
     }
 
-    public function test_secretaria_cannot_use_the_assistant(): void
-    {
-        $this->actingAs($this->staff('secretaria'));
-        config(['horus-web.service_token' => 'token-de-servicio-del-bff-para-pruebas-0123456789']);
-        $this->postJson('/api/panel/v1/compartido/asistente/mensaje', ['mensaje' => 'hola', 'session_id' => 's'], ['X-Horus-Web-Token' => 'token-de-servicio-del-bff-para-pruebas-0123456789'])->assertForbidden();
-    }
-
     public function test_admin_user_update_changes_the_bound_user_instead_of_creating_one(): void
     {
         $objetivo = User::factory()->create(['name' => 'Original', 'email' => 'objetivo@example.com']);

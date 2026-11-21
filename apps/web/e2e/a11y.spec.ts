@@ -22,7 +22,6 @@ test.describe('Páginas del panel', () => {
     ['Notificaciones', '/admin/academico/notificaciones'],
     ['Reportes (matrículas)', '/admin/academico/reportes'],
     ['Reportes (cobranza, con gráfico)', '/admin/academico/reportes?tipo=cobranza'],
-    ['Asistente virtual', '/admin/academico/asistente'],
   ];
   for (const [nombre, ruta] of rutas) {
     test(`${nombre}: sin violaciones graves`, async ({ page }) => {

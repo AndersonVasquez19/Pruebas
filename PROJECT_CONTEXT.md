@@ -1,6 +1,8 @@
 # Horus-System — Contexto técnico del proyecto
 
-> **Estado vigente — 18/11/2026: Blade y Vite retirados de `apps/api`.** Next.js (`apps/web`) es la **única interfaz web**; Laravel
+> **Estado vigente — 21/11/2026: repositorio nuevo.** Este repositorio es la continuación de Horus System con historial propio, base PostgreSQL nueva (`horus_db`), `APP_KEY` y secretos propios. El original queda como respaldo congelado. El producto se reorienta a **Educación y Atención al Cliente**: el 21/11/2026 se retiraron el chatbot (`apps/ai` y su capa en Laravel/Next) y la sección de Tecnología (servicios y cotizaciones; migraciones `000096` y `000097`), y los reemplaza un botón flotante de WhatsApp; falta reforzar el panel (pagos asistidos sin pasarela, preinscripciones, atención unificada, certificados). **Plan y límites vigentes: [`AGENTS.md`](AGENTS.md).** Línea base medida el 20/11/2026 antes de retirar nada: 3670 aprobadas, 2 omitidas. **Tras la Fase 1: 1898 aprobadas, 2 omitidas, 0 fallidas** (SQLite en memoria); la cifra baja porque se borraron los tests de lo retirado. Todo lo que este documento dice del asistente virtual, Horus AI, servicios tecnológicos y cotizaciones, PostgreSQL S7 y `horus_group` es **histórico**.
+
+> **Estado anterior — 18/11/2026: Blade y Vite retirados de `apps/api`.** Next.js (`apps/web`) es la **única interfaz web**; Laravel
 > solo expone API (`/api/auth/*` JWT, `/api/public/v1/*` para el BFF, `/api/panel/v1/*` para el panel) y genera PDF, correos y páginas de
 > error. El retiro se hizo en cinco fases con autorización expresa del propietario en cada una (páginas públicas; panel `/admin`;
 > autenticación web; Vite y herramientas; documentación), cada una con la suite PHP completa en verde (SQLite): última medida,

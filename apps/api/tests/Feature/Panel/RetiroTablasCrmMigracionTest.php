@@ -32,7 +32,7 @@ final class RetiroTablasCrmMigracionTest extends TestCase
             $this->assertFalse(Schema::hasTable($tabla), $tabla);
         }
         $this->assertTrue(Schema::hasTable('secuencias_codigo'), 'La usan los códigos de las ediciones.');
-        $this->assertTrue(Schema::hasTable('solicitudes_cotizacion'));
+        $this->assertFalse(Schema::hasTable('solicitudes_cotizacion'), 'Tecnología y sus cotizaciones las retira la migración 000097.');
     }
 
     public function test_repetirla_no_falla_ni_cambia_nada(): void

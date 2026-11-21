@@ -40,7 +40,7 @@ export default function PoliticasPrivacidadPage() {
               <span>2. Finalidad del Tratamiento de Datos</span>
             </h2>
             <p>
-              Los datos personales solicitados en nuestros formularios (solicitud de matrícula, libro de reclamaciones, contactos y cotizaciones) son tratados con la exclusiva finalidad de:
+              Los datos personales solicitados en nuestros formularios (solicitud de matrícula, libro de reclamaciones y contactos) son tratados con la exclusiva finalidad de:
             </p>
             <ul className="list-disc list-inside space-y-1.5 pl-2 mt-2">
               <li>Gestionar la matrícula y emisión de certificados con valor curricular.</li>

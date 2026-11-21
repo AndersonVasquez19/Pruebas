@@ -12,8 +12,6 @@ use App\Models\Estudiante;
 use App\Models\Matricula;
 use App\Models\User;
 use App\Services\CatalogoPublicoCursos;
-use App\Services\ExportadorCatalogoAdvisor;
-use App\Services\FirmaCatalogoAdvisor;
 use Carbon\Carbon;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +34,6 @@ class Sprint17PublicacionTest extends TestCase
         parent::setUp();
         $this->assertIsolatedTestDatabase();
         $this->travelTo(Carbon::parse('2026-10-28 12:00:00', 'America/Lima'));
-        config(['horus-advisor.signing_key' => str_repeat('k', 32)]);
         Http::preventStrayRequests();
     }
 
@@ -54,7 +51,6 @@ class Sprint17PublicacionTest extends TestCase
         $this->retirarFichaCursoPanel($curso)->assertOk();
         $this->assertSame($retirada, CursoPublicacion::firstOrFail()->getAttributes());
         $this->assertSame(1, AuditLog::where('action', 'curso_despublicado')->count());
-        $this->assertSame([], app(ExportadorCatalogoAdvisor::class)->construir($admin)['items']);
     }
 
     public function test_withdrawal_without_a_publication_does_not_create_content_or_audit(): void
@@ -176,8 +172,6 @@ class Sprint17PublicacionTest extends TestCase
         $this->assertFalse(config('catalogo-publico.enabled'));
         $this->assertSame(['version' => '1.0', 'habilitado' => false, 'total' => 0, 'cursos' => []], app(CatalogoPublicoCursos::class)->paraWeb());
         $this->assertStringNotContainsString('curso_publicaciones', implode(' ', $queries));
-        $this->assertFalse(config('horus-advisor.enabled'));
-        $this->assertFalse(config('chatbot.public_catalog_enabled'));
     }
 
     public function test_public_read_is_allowlisted_deterministic_live_and_feeds_enabled_public_page(): void
@@ -196,12 +190,8 @@ class Sprint17PublicacionTest extends TestCase
         }
         $this->retirarFichaCursoPanel($uno)->assertOk();
         $this->assertSame(1, $service->paraWeb()['total']);
-        $export = app(ExportadorCatalogoAdvisor::class)->construir($admin);
-        $this->assertCount(1, $export['items']);
-        $this->assertTrue(app(FirmaCatalogoAdvisor::class)->verificar($export));
         $this->travelTo(Carbon::parse('2026-10-29 00:00:00', 'America/Lima'));
         $this->assertSame([], $service->paraWeb()['cursos']);
-        $this->assertSame([], app(ExportadorCatalogoAdvisor::class)->construir($admin)['items']);
         Http::assertNothingSent();
     }
 

@@ -3,7 +3,7 @@
 # Imagen de Laravel (API, PDF, correos) para Railway. Una sola imagen sirve a tres servicios, elegidos con la
 # variable HORUS_PROCESO: `web` (FrankenPHP), `worker` (queue:work) y `scheduler` (schedule:work).
 #
-# CONTEXTO DE CONSTRUCCIÓN: la raíz del repositorio (Laravel lee también apps/ai/data/knowledge.json).
+# CONTEXTO DE CONSTRUCCIÓN: la raíz del repositorio.
 #   docker build -f apps/api/Dockerfile -t horus-api .
 #
 # La imagen NO ejecuta migraciones ni seeders: se aplican a mano y con autorización (docs/despliegue-vercel-railway.md).
@@ -19,8 +19,6 @@ RUN install-php-extensions pdo_pgsql bcmath gd intl zip pcntl opcache \
 
 COPY apps/api/docker/php.ini "$PHP_INI_DIR/conf.d/zz-horus.ini"
 
-# Estructura del monorepo: /srv/horus/api (Laravel) y /srv/horus/ai/data (conocimiento compartido con Horus AI),
-# de modo que `dirname(base_path()).'/ai/data/knowledge.json'` resuelva sin variables extra.
 WORKDIR /srv/horus/api
 
 # Dependencias primero (capa reutilizable mientras no cambie composer.lock). Sin dependencias de desarrollo.
@@ -28,7 +26,6 @@ COPY apps/api/composer.json apps/api/composer.lock apps/api/composer.phar ./
 RUN php composer.phar install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
 
 COPY apps/api/ ./
-COPY apps/ai/data/knowledge.json /srv/horus/ai/data/knowledge.json
 
 RUN php composer.phar dump-autoload --optimize --no-dev --no-interaction \
     && rm composer.phar \

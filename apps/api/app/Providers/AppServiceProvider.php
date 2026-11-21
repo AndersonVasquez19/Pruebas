@@ -2,14 +2,9 @@
 
 namespace App\Providers;
 
-use App\Http\Controllers\Api\Publico\ChatPublicoController;
-use App\Models\Curso;
-use App\Models\CursoPublicacion;
-use App\Models\ServicioPublicacion;
-use App\Models\ServicioTecnologico;
-use App\Observers\PublicacionCatalogoAdvisorObserver;
 use App\Support\Email;
 use App\Support\Entrada;
+use App\Support\VisitantePublico;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,14 +26,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Curso::observe(PublicacionCatalogoAdvisorObserver::class);
-        CursoPublicacion::observe(PublicacionCatalogoAdvisorObserver::class);
-        ServicioTecnologico::observe(PublicacionCatalogoAdvisorObserver::class);
-        ServicioPublicacion::observe(PublicacionCatalogoAdvisorObserver::class);
-
         // Identificadores numéricos del panel: un valor no numérico responde 404 en lugar de llegar a la
         // consulta (PostgreSQL lo rechaza con SQLSTATE 22P02 y la petición terminaría en 500).
-        foreach (['aprobacion', 'curso', 'estudiante', 'matricula', 'notificacion', 'role', 'servicio', 'user'] as $parametro) {
+        foreach (['aprobacion', 'curso', 'estudiante', 'matricula', 'notificacion', 'role', 'user'] as $parametro) {
             Route::pattern($parametro, '[0-9]+');
         }
 
@@ -69,11 +59,6 @@ class AppServiceProvider extends ServiceProvider
         ));
         // BFF de apps/web: un solo cubo por servicio (el visitante final no llega a Laravel con su IP en las lecturas).
         RateLimiter::for('publico-web', fn (Request $request) => Limit::perMinute(300)->by('publico-web'));
-        // Chat del BFF: el visitante lo identifica el servidor de Next con un HMAC de su IP (opaco, sin IP en claro).
-        RateLimiter::for('chat-bff', fn (Request $request) => Limit::perMinute(20)->by('chat-bff:'.ChatPublicoController::visitante($request)));
-        RateLimiter::for('chat', fn (Request $request) => Limit::perMinute(30)->by(
-            $request->user() !== null ? 'chat-user:'.Entrada::texto($request->user()->getAuthIdentifier()) : 'chat-ip:'.$request->ip(),
-        ));
 
         // Login web y API: límite por IP y también por correo, para frenar ataques distribuidos
         // contra una misma cuenta sin que un solo correo bloquee a todos los demás.
@@ -93,12 +78,9 @@ class AppServiceProvider extends ServiceProvider
         // este calcula (HMAC, nunca la IP). Aquí solo hay topes amplios contra ráfagas, incluidas las inválidas; los
         // límites estrictos de envío (3/10 min, 10/día por visitante y 3/día por correo) los aplica el controlador
         // después de validar, para que equivocarse al rellenar el formulario no bloquee al consumidor.
-        RateLimiter::for('reclamaciones-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 20)->by('reclamaciones-bff-intentos:'.ChatPublicoController::visitante($request)));
-        RateLimiter::for('reclamaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('reclamaciones-bff-formulario:'.ChatPublicoController::visitante($request)));
-        // Fase 2c.3 (BFF): solicitud de cotización. Topes amplios por visitante; los estrictos los aplica el controlador tras validar.
-        RateLimiter::for('cotizaciones-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 20)->by('cotizaciones-bff-intentos:'.ChatPublicoController::visitante($request)));
+        RateLimiter::for('reclamaciones-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 20)->by('reclamaciones-bff-intentos:'.VisitantePublico::identificar($request)));
+        RateLimiter::for('reclamaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('reclamaciones-bff-formulario:'.VisitantePublico::identificar($request)));
         // «Contáctanos» del BFF: tope amplio por visitante; los estrictos los aplica el controlador tras validar.
-        RateLimiter::for('contacto-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 15)->by('contacto-bff-intentos:'.ChatPublicoController::visitante($request)));
-        RateLimiter::for('cotizaciones-bff-formulario', fn (Request $request) => Limit::perMinute(30)->by('cotizaciones-bff-formulario:'.ChatPublicoController::visitante($request)));
+        RateLimiter::for('contacto-bff-intentos', fn (Request $request) => Limit::perMinutes(10, 15)->by('contacto-bff-intentos:'.VisitantePublico::identificar($request)));
     }
 }

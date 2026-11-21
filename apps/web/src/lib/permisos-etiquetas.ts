@@ -21,7 +21,6 @@ const MODULOS: Record<string, { etiqueta: string; orden: number }> = {
   roles: { etiqueta: 'Roles y permisos', orden: 16 },
   auditoria: { etiqueta: 'Historial de actividad', orden: 17 },
   respaldo: { etiqueta: 'Exportar datos', orden: 18 },
-  asistente: { etiqueta: 'Asistente virtual', orden: 19 },
 };
 
 const ACCIONES: Record<string, string> = {
@@ -54,7 +53,6 @@ const ESPECIALES: Record<string, string> = {
   'reclamaciones.gestionar': 'Gestionar reclamaciones y mensajes de contacto',
   'reclamaciones.responder': 'Responder reclamaciones',
   'aprobaciones.gestionar': 'Aprobar o rechazar solicitudes',
-  'asistente.ver': 'Usar y revisar el asistente virtual',
   'respaldo.ver': 'Ver la página de exportación de datos',
   'respaldo.exportar': 'Descargar los datos exportados',
   'auditoria.ver': 'Ver el historial de actividad',

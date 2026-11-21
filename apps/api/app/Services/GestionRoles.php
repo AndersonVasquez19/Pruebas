@@ -31,8 +31,6 @@ final class GestionRoles
         'seguimientos.editar',
         'seguimientos.eliminar',
         'asistente.entrenar',
-        // Marca editorial del catálogo público (no hay panel de servicios): no se asigna desde Roles y permisos.
-        'servicios.publicar',
     ];
 
     public function __construct(private readonly AdminProtection $adminProtection) {}

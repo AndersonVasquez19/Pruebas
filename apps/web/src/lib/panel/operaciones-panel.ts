@@ -103,7 +103,6 @@ export const OPERACIONES: readonly Operacion[] = [
   { metodo: 'POST', patron: /^compartido\/perfil\/2fa\/desactivar$/, campos: ['current_password', 'codigo'] },
   { metodo: 'POST', patron: /^compartido\/auditoria\/exportar$/, consulta: ['accion', 'modelo', 'usuario', 'desde', 'hasta', 'formato'], archivo: ['application/json', 'text/csv', XLSX] },
   { metodo: 'POST', patron: /^compartido\/respaldo\/exportar$/, consulta: ['tablas', 'desde', 'hasta'], archivo: ['application/zip'] },
-  { metodo: 'POST', patron: /^compartido\/asistente\/mensaje$/, campos: ['mensaje', 'session_id'] },
   { metodo: 'POST', patron: /^compartido\/reclamaciones\/exportar$/, consulta: ['formato', 'busqueda', 'tipo', 'estado', 'canal', 'responsable', 'plazo', 'desde', 'hasta', 'sort'], archivo: ['text/csv', XLSX] },
   { metodo: 'POST', patron: /^compartido\/reclamaciones\/asignar-lote$/, campos: ['responsable_id'], listas: ['identificadores'] },
   { metodo: 'POST', patron: new RegExp(`^compartido/reclamaciones/${UUID}/gestion$`), campos: CAMPOS_GESTION_RECLAMACION },

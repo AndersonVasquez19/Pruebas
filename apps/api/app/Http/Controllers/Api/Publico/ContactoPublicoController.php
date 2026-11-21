@@ -12,6 +12,7 @@ use App\Models\NotificacionInterna;
 use App\Models\User;
 use App\Support\Entrada;
 use App\Support\LimitesEnvioPublico;
+use App\Support\VisitantePublico;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +29,7 @@ final class ContactoPublicoController extends Controller
     public function store(StoreContactoPublicoRequest $request): JsonResponse
     {
         // Topes estrictos tras validar, por visitante (HMAC del BFF) y por medio de contacto (hash): equivocarse al rellenar no bloquea.
-        $visitante = ChatPublicoController::visitante($request);
+        $visitante = VisitantePublico::identificar($request);
         $medio = strtolower(Entrada::texto(($request->input('correo') ?: $request->input('telefono'))));
         $limites = [
             'contacto-bff-v10:'.$visitante => [3, 600],

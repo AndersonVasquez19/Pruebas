@@ -42,6 +42,12 @@ return new class extends Migration
             return;
         }
 
+        // La migración 000097 elimina `solicitudes_cotizacion` al retirar Tecnología (y la 000079 ya quitó `cliente_id`):
+        // un rollback completo pasa por aquí con la tabla o la columna ausentes y no debe fallar.
+        if (! Schema::hasTable('solicitudes_cotizacion') || ! Schema::hasColumn('solicitudes_cotizacion', 'cliente_id')) {
+            return;
+        }
+
         Schema::table('solicitudes_cotizacion', function (Blueprint $table): void {
             $table->dropConstrainedForeignId('cliente_id');
         });

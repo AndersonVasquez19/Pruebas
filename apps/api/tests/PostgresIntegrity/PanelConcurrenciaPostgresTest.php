@@ -5,18 +5,10 @@ declare(strict_types=1);
 namespace Tests\PostgresIntegrity;
 
 use App\Models\AuditLog;
-use App\Models\ServicioPublicacion;
-use App\Models\ServicioTecnologico;
-use App\Models\SolicitudCotizacion;
 use App\Models\User;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
-use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\PostgresIntegrity\Concerns\RequiresIsolatedPostgres;
 use Tests\TestCase;
@@ -71,23 +63,6 @@ class PanelConcurrenciaPostgresTest extends TestCase
         }
     }
 
-    private function servicioConFicha(string $codigo): ServicioTecnologico
-    {
-        $servicio = ServicioTecnologico::forceCreate([
-            'identificador_publico' => (string) Str::uuid(), 'codigo' => $codigo, 'nombre' => "Servicio {$codigo}",
-            'categoria' => 'redes', 'estado' => 'activo', 'revision' => 1,
-        ]);
-        $ficha = new ServicioPublicacion([
-            'titulo' => 'Redes', 'resumen' => 'Resumen', 'descripcion' => 'Descripción pública.',
-            'vigente_desde' => now('America/Lima')->toDateString(), 'vigente_hasta' => now('America/Lima')->addMonth()->toDateString(),
-        ]);
-        $ficha->servicio_tecnologico_id = $servicio->id;
-        $ficha->estado = 'borrador';
-        $ficha->save();
-
-        return $servicio->refresh();
-    }
-
     /** @return array<string, mixed> */
     private function fichaCurso(array $cambios = []): array
     {
@@ -96,49 +71,6 @@ class PanelConcurrenciaPostgresTest extends TestCase
             'vigente_desde' => now('America/Lima')->toDateString(), 'vigente_hasta' => now('America/Lima')->addMonth()->toDateString(),
             'confirmacion_publica' => true, ...$cambios,
         ];
-    }
-
-    // 1. ETag en servicios --------------------------------------------------------------------------------------------
-
-    public function test_dos_escrituras_con_la_misma_revision_de_servicio_una_200_y_otra_412(): void
-    {
-        $admin = $this->admin();
-        $servicio = $this->servicioConFicha('ETAG-1');
-        $revision = $servicio->etag();
-
-        $this->como($admin, 'PUT', "servicios/servicios/{$servicio->id}", ['nombre' => 'Primero', '_revision' => $revision])->assertOk();
-        $auditorias = AuditLog::count();
-
-        $this->como($admin, 'PUT', "servicios/servicios/{$servicio->id}", ['nombre' => 'Segundo', '_revision' => $revision])->assertStatus(412);
-
-        $this->assertSame('Primero', $servicio->refresh()->nombre, 'La escritura obsoleta no cambia nada.');
-        $this->assertSame($auditorias, AuditLog::count(), 'La escritura rechazada no audita.');
-        $this->assertSame(2, (int) $servicio->revision, 'Una sola escritura avanzó la revisión.');
-    }
-
-    public function test_escritura_de_servicio_espera_el_bloqueo_y_la_revision_obsoleta_da_412(): void
-    {
-        $admin = $this->admin();
-        $servicio = $this->servicioConFicha('ETAG-2');
-        $obsoleta = $servicio->etag();
-        $auditorias = AuditLog::count();
-
-        $b = $this->secondSession();
-        $b->beginTransaction();
-        $b->select('select id from servicios_tecnologicos where id = ? for update', [$servicio->id]);
-        $b->update('update servicios_tecnologicos set revision = revision + 1 where id = ?', [$servicio->id]);
-
-        $this->limitLockWait();
-        $this->assertBlocked(fn () => $this->como($admin, 'PUT', "servicios/servicios/{$servicio->id}", ['nombre' => 'Bloqueado', '_revision' => $obsoleta]));
-        $this->assertSame($auditorias, AuditLog::count(), 'El intento bloqueado no deja auditoría.');
-
-        $b->commit();
-
-        $this->como($admin, 'PUT', "servicios/servicios/{$servicio->id}", ['nombre' => 'Obsoleto', '_revision' => $obsoleta])->assertStatus(412);
-        $this->como($admin, 'PUT', "servicios/servicios/{$servicio->id}", ['nombre' => 'Vigente', '_revision' => $servicio->refresh()->etag()])->assertOk();
-
-        $this->assertSame('Vigente', $servicio->refresh()->nombre);
-        $this->assertSame(1, AuditLog::count() - $auditorias, 'Una sola escritura efectiva, una sola auditoría.');
     }
 
     // 2. Publicación de curso en paralelo -----------------------------------------------------------------------------
@@ -171,47 +103,6 @@ class PanelConcurrenciaPostgresTest extends TestCase
         $this->assertSame(1, AuditLog::where('action', 'curso_publicado')->count());
         $this->assertSame(1, AuditLog::where('action', 'curso_despublicado')->count());
         $this->assertSame(1, DB::table('curso_publicaciones')->where('curso_id', $curso->id)->count(), 'Una sola ficha por curso.');
-    }
-
-    // 3. Cotizaciones: creación idempotente en carrera -----------------------------------------------------------------
-
-    public function test_creacion_de_cotizacion_con_la_misma_clave_en_carrera_se_reconcilia_con_200(): void
-    {
-        $admin = $this->admin();
-        $datos = [
-            'contacto_nombre' => 'Cliente Manual', 'necesidad_cliente' => 'Cablear dos pisos.', 'contacto_email' => 'cliente@example.test',
-        ];
-
-        // Una creación previa con otra clave fija el contenido (la huella depende solo de los datos).
-        $this->como($admin, 'POST', 'servicios/cotizaciones', $datos + ['_clave' => (string) Str::uuid()])->assertCreated();
-        $modelo = DB::table('solicitudes_cotizacion')->first();
-        $this->assertNotNull($modelo);
-
-        $clave = (string) Str::uuid();
-        $b = $this->secondSession();
-        $hecho = false;
-        $codigoGanadora = 'SOL-GANADORA-'.Str::upper(Str::random(6));
-        $principal = DB::connection();
-        DB::listen(function (QueryExecuted $q) use ($b, $principal, $modelo, $clave, $codigoGanadora, &$hecho): void {
-            // Justo después de que la petición lea «¿ya existe esta clave?» (SELECT … FOR UPDATE) y no encuentre nada,
-            // otra petición confirma la misma clave: el INSERT de la principal termina en 23505 y se reconcilia.
-            if (! $hecho && $q->connection === $principal && str_contains($q->sql, 'from "solicitudes_cotizacion"') && str_contains($q->sql, 'for update')) {
-                $hecho = true;
-                $fila = (array) $modelo;
-                unset($fila['id']);
-                $fila['identificador'] = (string) Str::uuid();
-                $fila['codigo'] = $codigoGanadora;
-                $fila['creacion_clave_hash'] = hash('sha256', strtolower($clave));
-                $b->table('solicitudes_cotizacion')->insert($fila);
-            }
-        });
-
-        $respuesta = $this->como($admin, 'POST', 'servicios/cotizaciones', $datos + ['_clave' => $clave]);
-
-        $this->assertTrue($hecho, 'La carrera se provocó.');
-        $respuesta->assertOk()->assertJsonPath('data.codigo', $codigoGanadora);
-        $this->assertSame(2, SolicitudCotizacion::count(), 'La clave repetida no crea un tercer expediente.');
-        $this->assertSame(1, AuditLog::where('action', 'cotizacion_creada')->count(), 'La repetición no audita una segunda creación.');
     }
 
 }

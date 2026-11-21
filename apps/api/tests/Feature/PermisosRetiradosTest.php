@@ -78,7 +78,7 @@ class PermisosRetiradosTest extends TestCase
 
         config(['horus-web.service_token' => 'token-de-servicio-del-bff-para-pruebas-0123456789']);
         $cabecera = ['X-Horus-Web-Token' => 'token-de-servicio-del-bff-para-pruebas-0123456789'];
-        foreach (['academico/estudiantes', 'academico/cursos', 'academico/matriculas', 'compartido/asistente'] as $ruta) {
+        foreach (['academico/estudiantes', 'academico/cursos', 'academico/matriculas'] as $ruta) {
             $this->actingAs($con)->getJson('/api/panel/v1/'.$ruta, $cabecera)
                 ->assertStatus($this->actingAs($sin)->getJson('/api/panel/v1/'.$ruta, $cabecera)->status());
         }

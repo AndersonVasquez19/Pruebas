@@ -37,10 +37,9 @@ class CursosPorModalidadTest extends TestCase
         }
     }
 
-    public function test_la_web_muestra_el_catalogo_por_defecto_sin_activar_el_catalogo_del_chat(): void
+    public function test_la_web_muestra_el_catalogo_por_defecto(): void
     {
         $this->assertTrue(config('catalogo-publico.enabled'));
-        $this->assertFalse(config('chatbot.public_catalog_enabled'));
         $this->cursosWeb()->assertOk()->assertJsonPath('habilitado', true)->assertJsonPath('cursos', [])->assertJsonPath('total', 0);
         $this->assertDatabaseCount('curso_publicaciones', 0);
         Http::assertNothingSent();

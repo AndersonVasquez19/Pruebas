@@ -4,7 +4,7 @@
 //   - Laravel (API y archivos públicos): /up, /api/auth/*, /storage/*, /assets/images/*
 //   - Next.js (interfaz y su BFF):       todo lo demás, incluido /api/bff/*
 //   - Nunca expuestas al navegador:      /api/panel/* y /api/public/* (solo las llama el BFF de Next, de servidor a servidor,
-//                                        con el token de servicio), y Horus AI (solo la llama Laravel por loopback).
+//                                        con el token de servicio).
 
 export const DESTINO = Object.freeze({ LARAVEL: 'laravel', NEXT: 'next', BLOQUEADO: 'bloqueado' });
 

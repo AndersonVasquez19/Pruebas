@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\ConsolidacionPostgres;
 
-use App\Models\ChatLog;
 use App\Models\User;
-use App\Services\AsistenteVirtualService;
 use App\Services\ContenidoPublicoServicios;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\PostgresIntegrity\Concerns\ReclamacionesPostgres;
@@ -63,27 +60,5 @@ class MigracionesAprobadasTest extends CasoPostgresReversible
         $this->assertFalse(Schema::hasTable('servicio_publicacion_elementos'));
         $this->assertFalse(Schema::hasColumn('servicio_publicaciones', 'titulo_tarjetas'));
         $this->assertTrue(DB::table('servicio_publicaciones')->where('id', $publicacion)->exists());
-    }
-
-    public function test_000034_conserva_historicos_y_audita_sin_texto_privado(): void
-    {
-        $this->assertFalse(Schema::hasColumn('chat_logs', 'fuente'), '000034 ya existe: no se revierte.');
-        $nombre = '2026_11_03_000034_add_fuente_to_chat_logs';
-        $migracion = $this->migracion($nombre);
-        $historico = $this->fixture('chat_logs', ['session_id' => 'consolidacion-historico',
-            'mensaje_usuario' => '[contenido omitido por privacidad]', 'respuesta_bot' => 'Contingencia sintética']);
-        $migracion->up();
-        $this->fixture('migrations', ['migration' => $nombre, 'batch' => 999999]);
-        $this->assertNull(DB::table('chat_logs')->where('id', $historico)->value('fuente'));
-        $resultado = app(AsistenteVirtualService::class)->procesarMensaje('cursos', 'consolidacion-fuente');
-        $this->assertSame('respaldo', $resultado['fuente']);
-        $session = hash_hmac('sha256', 'direct|consolidacion-fuente', (string) config('app.key'));
-        $registro = ChatLog::query()->where('session_id', $session)->sole();
-        $this->assertSame('respaldo', $registro->fuente);
-        $this->assertSame('[contenido omitido por privacidad]', $registro->mensaje_usuario);
-        Http::assertNothingSent();
-        $migracion->down();
-        $this->assertFalse(Schema::hasColumn('chat_logs', 'fuente'));
-        $this->assertTrue(DB::table('chat_logs')->where('id', $historico)->exists());
     }
 }

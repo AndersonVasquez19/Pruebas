@@ -33,48 +33,6 @@ export interface CatalogoCursos {
   cursos: CursoPublico[];
 }
 
-export interface TarjetaServicio {
-  titulo: string;
-  descripcion: string;
-  caracteristicas: string[];
-  icono: string | null;
-  variante: 'producto' | 'escena' | null;
-  imagen_url: string | null;
-  imagen_alt: string;
-}
-
-export interface ContenidoPagina {
-  titulo: string;
-  parrafos: string[];
-  imagen_url: string | null;
-  imagen_alt: string;
-  titulo_tarjetas: string | null;
-  tarjetas: TarjetaServicio[];
-}
-
-export type CodigoPagina = 'cableado-estructurado' | 'camaras-seguridad' | 'soporte-mantenimiento';
-
-/** `contenido: null` = Laravel no tiene ficha autorizada: la página usa su texto estático. */
-export interface PaginaServicio {
-  pagina: CodigoPagina;
-  contenido: ContenidoPagina | null;
-}
-
-export interface ServicioPublico {
-  titulo: string;
-  resumen: string;
-  descripcion: string;
-  categoria?: string | null;
-}
-
-export interface CatalogoServicios {
-  habilitado: boolean;
-  total: number;
-  pagina: number;
-  por_pagina: number;
-  servicios: ServicioPublico[];
-}
-
 const TIMEOUT_MS = 5000;
 
 export function configuracionApi(): { base: string; token: string } | null {
@@ -105,14 +63,6 @@ export async function horusGet<T>(ruta: string): Promise<ResultadoApi<T>> {
 
 export function obtenerCursos(): Promise<ResultadoApi<CatalogoCursos>> {
   return horusGet<CatalogoCursos>('/cursos');
-}
-
-export function obtenerServicios(pagina = 1): Promise<ResultadoApi<CatalogoServicios>> {
-  return horusGet<CatalogoServicios>(`/servicios?pagina=${Math.max(1, Math.trunc(pagina))}`);
-}
-
-export function obtenerPagina(codigo: CodigoPagina): Promise<ResultadoApi<PaginaServicio>> {
-  return horusGet<PaginaServicio>(`/paginas/${codigo}`);
 }
 
 /**

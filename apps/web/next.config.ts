@@ -36,11 +36,11 @@ const nextConfig: NextConfig = {
     },
   },
   /**
-   * Direcciones que antes servía Laravel (Blade) y que siguen guardadas en notificaciones, aprobaciones, correos y en las
-   * respuestas del chat. Son temporales (307): el destino puede cambiar sin que un navegador recuerde el anterior.
+   * Direcciones que antes servía Laravel (Blade) y que siguen guardadas en notificaciones, aprobaciones y correos.
+   * Son temporales (307): el destino puede cambiar sin que un navegador recuerde el anterior.
    */
   async redirects() {
-    const modulosDelPanel = ["matriculas", "estudiantes", "cursos", "reportes", "buscar", "respaldo", "asistente"];
+    const modulosDelPanel = ["matriculas", "estudiantes", "cursos", "reportes", "buscar", "respaldo"];
     return [
       ...modulosDelPanel.map((modulo) => ({
         source: `/admin/${modulo}/:path*`,
@@ -50,7 +50,6 @@ const nextConfig: NextConfig = {
       { source: "/register", destination: "/registro", permanent: false },
       { source: "/forgot-password", destination: "/recuperar-contrasena", permanent: false },
       { source: "/libro-reclamaciones", destination: "/legales/libro-reclamaciones", permanent: false },
-      // «Tecnologías» oculta (ver src/lib/funciones.ts): sin redirección, /solicitar-cotizacion devuelve 404.
       { source: "/politicas-devolucion", destination: "/legales/politicas-devolucion", permanent: false },
       { source: "/politicas-privacidad", destination: "/legales/politicas-privacidad", permanent: false },
       { source: "/politicas-cookies", destination: "/legales/politicas-cookies", permanent: false },

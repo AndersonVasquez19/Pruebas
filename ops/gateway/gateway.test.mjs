@@ -154,14 +154,16 @@ describe('proxy', () => {
 describe('configuración de servicios', () => {
   test('valores por defecto y banderas', () => {
     const cfg = resolverConfig([], {});
-    assert.deepEqual(cfg.puertos, { gateway: 8080, laravel: 8000, next: 3000, ai: 8001 });
+    assert.deepEqual(cfg.puertos, { gateway: 8080, laravel: 8000, next: 3000 });
     assert.equal(cfg.modo, 'dev');
-    assert.equal(cfg.chatbot, true);
-    const sin = resolverConfig(['--sin-chatbot', '--semantico', '--puerto=9090', '--modo=prod'], {});
-    assert.equal(sin.chatbot, false);
-    assert.equal(sin.semantico, false, 'sin chatbot no hay modo híbrido');
-    assert.equal(sin.puertos.gateway, 9090);
-    assert.equal(sin.modo, 'prod');
+    const otra = resolverConfig(['--puerto=9090', '--modo=prod'], {});
+    assert.equal(otra.puertos.gateway, 9090);
+    assert.equal(otra.modo, 'prod');
+  });
+
+  test('las opciones del chatbot retirado ya no existen', () => {
+    assert.throws(() => resolverConfig(['--sin-chatbot'], {}), /desconocida/);
+    assert.throws(() => resolverConfig(['--semantico'], {}), /desconocida/);
   });
 
   test('rechaza opciones, modos y puertos inválidos o repetidos', () => {
@@ -182,34 +184,18 @@ describe('configuración de servicios', () => {
     for (const s of servicios) assert.ok(!s.args.join(' ').includes(a.tokens.servicioWeb), `${s.nombre}: el token no va en la línea de comandos`);
   });
 
-  test('Laravel, Next y Horus AI quedan conectados entre sí con los mismos secretos', () => {
+  test('Laravel y Next quedan conectados entre sí con el mismo secreto', () => {
     const cfg = resolverConfig(['--puerto=8123'], {});
-    const por = Object.fromEntries(definirServicios(cfg).map((s) => [s.nombre, s]));
+    const servicios = definirServicios(cfg);
+    const por = Object.fromEntries(servicios.map((s) => [s.nombre, s]));
+    assert.deepEqual(servicios.map((s) => s.nombre), ['laravel', 'next'], 'solo Laravel y Next');
     assert.equal(por.laravel.env.HORUS_WEB_URL, 'http://127.0.0.1:8123');
     assert.equal(por.laravel.env.HORUS_WEB_SERVICE_TOKEN, por.next.env.HORUS_WEB_SERVICE_TOKEN);
     assert.equal(por.next.env.HORUS_API_URL, 'http://127.0.0.1:8000');
     assert.match(por.next.env.HORUS_WEB_ORIGIN, /http:\/\/127\.0\.0\.1:8123/);
-    assert.equal(por.laravel.env.HORUS_ADVISOR_URL, 'http://127.0.0.1:8001');
-    assert.equal(por.laravel.env.HORUS_ADVISOR_TOKEN, por.ai.env.HORUS_AI_SERVICE_TOKEN);
-    assert.equal(por.laravel.env.HORUS_ADVISOR_ENABLED, 'true');
-    assert.ok(por.ai.args.includes('127.0.0.1'), 'el chatbot solo escucha en loopback');
-    assert.equal(por.laravel.env.HORUS_AI_CATALOG_SYNC_ENABLED, undefined, 'la sincronización de catálogo se hereda del .env');
-    assert.equal(por.laravel.env.HORUS_OPS_RENEW_CATALOG, undefined);
-  });
-
-  test('sin chatbot no hay proceso de Horus AI y Laravel apaga el asesor', () => {
-    const servicios = definirServicios(resolverConfig(['--sin-chatbot'], {}));
-    assert.deepEqual(servicios.map((s) => s.nombre), ['laravel', 'next']);
-    assert.equal(servicios[0].env.HORUS_ADVISOR_ENABLED, 'false');
-  });
-
-  test('con sincronización de catálogo activa se levanta el worker compartiendo el token de Horus AI', () => {
-    const servicios = definirServicios(resolverConfig([], { HORUS_AI_CATALOG_SYNC_ENABLED: 'true' }));
-    const por = Object.fromEntries(servicios.map((s) => [s.nombre, s]));
-    assert.deepEqual(servicios.map((s) => s.nombre), ['laravel', 'next', 'ai', 'worker']);
-    assert.equal(por.worker.salud, undefined);
-    assert.equal(por.worker.env.HORUS_ADVISOR_TOKEN, por.ai.env.HORUS_AI_SERVICE_TOKEN);
-    assert.equal(por.worker.env.HORUS_OPS_ENABLED, 'true');
+    for (const s of servicios) {
+      assert.ok(!Object.keys(s.env).some((clave) => clave.startsWith('HORUS_ADVISOR') || clave.startsWith('HORUS_AI')), `${s.nombre}: sin variables del asistente retirado`);
+    }
   });
 });
 
