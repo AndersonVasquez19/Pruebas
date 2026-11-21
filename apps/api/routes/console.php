@@ -23,6 +23,12 @@ Schedule::command('horus:avisos-despachar')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+// Reservas de cupo (Fase 3): vence las que pasaron su plazo sin ningún pago y devuelve el cupo. Idempotente; el bloqueo caduca a
+// los 10 minutos para que una ejecución abandonada no impida las siguientes.
+Schedule::command('horus:reservas-expirar')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(10);
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

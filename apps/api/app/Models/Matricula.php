@@ -65,4 +65,10 @@ class Matricula extends Model
     {
         return $this->hasMany(ObligacionPago::class, 'matricula_id');
     }
+
+    /** @return HasOne<ReservaMatricula, $this> */
+    public function reserva(): HasOne
+    {
+        return $this->hasOne(ReservaMatricula::class, 'matricula_id');
+    }
 }

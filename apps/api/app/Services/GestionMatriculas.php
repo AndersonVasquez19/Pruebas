@@ -261,7 +261,11 @@ final class GestionMatriculas
         });
     }
 
-    public function anular(Matricula $matricula, int $actor, string $motivo): void
+    /**
+     * Anula una matrícula devolviendo su cupo. `$actor` es `null` cuando lo hace el sistema (p. ej. el vencimiento de una reserva):
+     * la auditoría queda sin usuario, que el panel muestra como «Sistema». Falla con 409 si la matrícula ya tiene pagos en el libro.
+     */
+    public function anular(Matricula $matricula, ?int $actor, string $motivo): void
     {
         $motivo = trim($motivo);
         DB::transaction(function () use ($matricula, $actor, $motivo): void {

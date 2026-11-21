@@ -270,7 +270,7 @@ final class AuditoriaAcademica
      *
      * @param  array{campos: list<string>, antes: array<string, mixed>, despues: array<string, mixed>}  $diferencias
      */
-    public static function registrarActualizacion(string $accion, Model $modelo, array $diferencias, int $actorId, ?string $efectoCupo = null): bool
+    public static function registrarActualizacion(string $accion, Model $modelo, array $diferencias, ?int $actorId, ?string $efectoCupo = null): bool
     {
         if ($diferencias['campos'] === []) {
             return false;
@@ -334,7 +334,7 @@ final class AuditoriaAcademica
     /**
      * @param  array<string, mixed>  $detalle
      */
-    private static function registrar(string $accion, Model $modelo, array $detalle, int $actorId): AuditLog
+    private static function registrar(string $accion, Model $modelo, array $detalle, ?int $actorId): AuditLog
     {
         return AuditLog::record(
             $accion,
