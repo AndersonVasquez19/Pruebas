@@ -23,6 +23,8 @@ export interface ResumenAcademico {
     matriculas_con_saldo?: { cantidad: number; monto: string };
     cuotas?: { vencidas: number; monto_vencido: string; por_vencer: number; monto_por_vencer: string };
     ediciones?: { por_iniciar: number; por_cerrar: number; lista_por_cerrar: { identificador: string; codigo: string; curso: string | null }[] };
+    /** Reclamos del Libro de Reclamaciones por su plazo legal; solo con `reclamaciones.ver`. Solo cifras, sin datos personales. */
+    reclamos?: { vencidas: number; vencen_hoy: number; por_vencer: number };
   };
   negocio?: { cobrado_mes?: string; saldo_por_cobrar?: string };
   academico?: {

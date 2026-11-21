@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bell, CalendarClock, ClipboardCheck, CircleDollarSign, Gauge, Hourglass, Landmark, MessageCircle, Users } from 'lucide-react';
+import { Bell, CalendarClock, ClipboardCheck, CircleDollarSign, FileWarning, Gauge, Hourglass, Landmark, MessageCircle, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Insignia } from '@/components/shared/ui/insignia';
 import { TarjetaKpi } from '@/components/shared/ui/tarjeta-kpi';
@@ -77,6 +77,17 @@ export function TableroAcademico({ datos }: { datos: Datos }) {
         valor={numero(a.ediciones.por_cerrar + a.ediciones.por_iniciar)}
         detalle={`${numero(a.ediciones.por_cerrar)} por cerrar el acta · ${numero(a.ediciones.por_iniciar)} por iniciar.`}
         icono={<CalendarClock className="h-5 w-5" />}
+      />
+    ),
+    a.reclamos && (
+      <TarjetaAccion
+        key="reclamos"
+        href={enlaceReclamos(a.reclamos)}
+        alerta={a.reclamos.vencidas > 0 || a.reclamos.vencen_hoy > 0}
+        etiqueta="Reclamos con plazo cercano"
+        valor={numero(a.reclamos.vencidas + a.reclamos.vencen_hoy + a.reclamos.por_vencer)}
+        detalle={detalleReclamos(a.reclamos)}
+        icono={<FileWarning className="h-5 w-5" />}
       />
     ),
   ].filter(Boolean);
@@ -290,6 +301,22 @@ function detalleSaldo(monto: string, cuotas?: NonNullable<Datos['acciones']>['cu
     partes.push(`${numero(cuotas.por_vencer)} por vencer (${moneda(cuotas.monto_por_vencer)})`);
   }
   return partes.length > 0 ? `${base} · ${partes.join(' · ')}.` : `${base}.`;
+}
+
+type Reclamos = NonNullable<NonNullable<Datos['acciones']>['reclamos']>;
+
+/** Lleva directo a lo más urgente: primero los vencidos, luego los que vencen hoy y por último los próximos. */
+function enlaceReclamos(r: Reclamos): string {
+  const base = '/admin/academico/reclamaciones';
+  if (r.vencidas > 0) return `${base}?plazo=vencidas`;
+  if (r.vencen_hoy > 0) return `${base}?plazo=vencen_hoy`;
+  if (r.por_vencer > 0) return `${base}?plazo=por_vencer`;
+  return base;
+}
+
+function detalleReclamos(r: Reclamos): string {
+  if (r.vencidas + r.vencen_hoy + r.por_vencer === 0) return 'Ningún reclamo abierto cerca de su plazo legal.';
+  return `${numero(r.vencidas)} vencidos · ${numero(r.vencen_hoy)} vencen hoy · ${numero(r.por_vencer)} por vencer.`;
 }
 
 /** «+3 frente al mes anterior (5)»; sin referencia anterior, solo el dato disponible. */

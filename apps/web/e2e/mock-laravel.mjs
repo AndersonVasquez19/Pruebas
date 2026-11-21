@@ -115,7 +115,7 @@ const RESUMEN = {
       { id: 2, estudiante: 'Luis Torres Díaz', curso: 'Curso de prueba 2', estado: 'pagada', fecha: '2026-11-18' },
     ],
   },
-  acciones: { pagos_por_confirmar: { cantidad: 2, monto: '300.00' } },
+  acciones: { pagos_por_confirmar: { cantidad: 2, monto: '300.00' }, reclamos: { vencidas: 1, vencen_hoy: 0, por_vencer: 2 } },
   negocio: { cobrado_mes: '1850.00', saldo_por_cobrar: '640.00' },
   seguimiento: { aprobaciones_pendientes: 2, notificaciones_sin_leer: 3 },
 };

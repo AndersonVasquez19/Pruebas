@@ -13,6 +13,7 @@ use App\Models\Matricula;
 use App\Models\User;
 use App\Services\GestionAsistencias;
 use App\Services\GestionPagos;
+use App\Support\ConsultaReclamaciones;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\NotificacionesPendientes;
@@ -21,15 +22,16 @@ use Illuminate\Support\Facades\DB;
 use LogicException;
 
 /**
- * Indicadores del dashboard académico. Solo datos del dominio académico (sin servicios, cotizaciones ni
- * reclamaciones) y cada bloque únicamente si el usuario tiene el permiso del módulo correspondiente.
+ * Indicadores del dashboard académico: el dominio académico más lo que exige atención hoy (pagos, ediciones y los plazos del
+ * Libro de Reclamaciones). Cada bloque únicamente si el usuario tiene el permiso del módulo correspondiente.
  *
  * Mismos criterios que el dashboard Blade (V-03): los ingresos solo para el rol `admin`, y las últimas
  * matrículas minimizadas (sin montos ni observaciones).
  *
  * Tablero de Horus Academic (ocho cifras, cada una SOLO si la persona tiene el permiso de su módulo; el servidor no envía lo que no
  * puede consultar):
- *  - `acciones`  → pagos por confirmar y saldo pendiente (`pagos.ver`), ediciones que requieren acción (`convocatorias.ver`);
+ *  - `acciones`  → pagos por confirmar y saldo pendiente (`pagos.ver`), ediciones que requieren acción (`convocatorias.ver`),
+ *                  reclamos con el plazo legal vencido, que vence hoy o por vencer (`reclamaciones.ver`; solo conteos, sin datos personales);
  *  - `negocio`   → cobrado del mes y saldo por cobrar (`pagos.ver`); las matrículas del mes y del mes anterior van en `indicadores`;
  *  - `academico` → cupos por edición (`convocatorias.ver`), asistencia por edición en curso (`asistencias.ver`).
  * Los importes salen del libro de pagos (confirmado neto de reversos), nunca de `matriculas.monto_pagado`.
@@ -103,6 +105,11 @@ final class ResumenAcademico
 
             $negocio['cobrado_mes'] = GestionPagos::formato($this->cobradoDelMes());
             $negocio['saldo_por_cobrar'] = GestionPagos::formato($saldo);
+        }
+
+        if ($user->can('reclamaciones.ver')) {
+            // La misma cuenta de plazos que usan el listado y las notificaciones (una sola fuente de verdad). Solo cifras.
+            $acciones['reclamos'] = ConsultaReclamaciones::plazos();
         }
 
         if ($user->can('convocatorias.ver')) {
